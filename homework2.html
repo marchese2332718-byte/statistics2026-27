@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework 2: Ethereum Wallet Pipeline</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Homework 2: Ethereum Wallet Pipeline</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <p class="eyebrow">Homework 2 · Wallet Cryptography</p>
+            <h1>From Wallet Seed to Ethereum Address</h1>
+            <p class="lead">Exploring the complete cryptographic pipeline: hashing, key derivation, and the cryptographic primitives that transform a human-readable mnemonic phrase into a secure Ethereum address.</p>
+        </div>
+
+        <section>
+            <h2 id="summary">Summary</h2>
+            <p>An Ethereum wallet uses a layered cryptographic pipeline where each component serves a distinct purpose. The process begins with <strong>BIP-39</strong>, which converts a random mnemonic phrase into a deterministic seed. <strong>BIP-32</strong> and <strong>BIP-44</strong> then derive hierarchical keys from that seed, enabling a single backup phrase to generate unlimited accounts. The private key is transformed into a public key using <strong>secp256k1</strong> elliptic-curve cryptography, which is then hashed with <strong>Keccak-256</strong> to produce an Ethereum address. Finally, <strong>EIP-55</strong> adds a checksum via mixed-case encoding to detect typos.</p>
+            <p>Each primitive addresses a different requirement: key management and derivation (BIP standards), one-way public-key relationships (secp256k1), irreversible fingerprinting (Keccak-256), and error detection (EIP-55). Together, they form a pipeline that balances security, usability, and compatibility with the broader cryptocurrency ecosystem.</p>
+        </section>
+
+        <section>
+            <h2 id="pipeline">The Wallet Pipeline</h2>
+            <p>A simplified Ethereum wallet pipeline can be represented as:</p>
+
+            <div class="pipeline">
+                <div class="pipe-step">
+                    <div class="pipe-label">Input</div>
+                    <div class="pipe-value">Mnemonic Phrase</div>
+                    <div class="pipe-example">"abandon abandon abandon ... art"</div>
+                </div>
+                <div class="pipe-arrow">↓ BIP-39</div>
+                <div class="pipe-step">
+                    <div class="pipe-label">512-bit</div>
+                    <div class="pipe-value">Seed</div>
+                    <div class="pipe-example">5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc1...</div>
+                </div>
+                <div class="pipe-arrow">↓ BIP-32 / BIP-44</div>
+                <div class="pipe-step">
+                    <div class="pipe-label">256-bit</div>
+                    <div class="pipe-value">Private Key</div>
+                    <div class="pipe-example">0x1234...abcd</div>
+                </div>
+                <div class="pipe-arrow">↓ secp256k1</div>
+                <div class="pipe-step">
+                    <div class="pipe-label">512-bit (uncompressed)</div>
+                    <div class="pipe-value">Public Key</div>
+                    <div class="pipe-example">04 + x-coordinate + y-coordinate</div>
+                </div>
+                <div class="pipe-arrow">↓ Keccak-256</div>
+                <div class="pipe-step">
+                    <div class="pipe-label">160-bit (last 20 bytes)</div>
+                    <div class="pipe-value">Ethereum Address</div>
+                    <div class="pipe-example">0xabcd...1234</div>
+                </div>
+                <div class="pipe-arrow">↓ EIP-55</div>
+                <div class="pipe-step">
+                    <div class="pipe-label">Mixed-case</div>
+                    <div class="pipe-value">Checksummed Address</div>
+                    <div class="pipe-example">0xAbCd...1234</div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="primitives">Cryptographic Primitives</h2>
+
+            <h3 id="bip39">BIP-39: Mnemonic Sentence and Seed Generation</h3>
+            <p><strong>Purpose:</strong> Convert random entropy into human-readable backup phrases and derive a deterministic seed.</p>
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>Generate 128–256 bits of entropy (randomness)</li>
+                <li>Add a checksum (SHA-256 of entropy, first few bits)</li>
+                <li>Split into 11-bit chunks and map to words from a 2048-word dictionary</li>
+                <li>Result: 12–24 word mnemonic phrase (e.g., "abandon abandon abandon ... art")</li>
+                <li>Use PBKDF2-HMAC-SHA512 with 2048 iterations to derive a 512-bit seed from mnemonic + optional passphrase</li>
+            </ul>
+            <p><strong>Statistical properties:</strong> The mnemonic is deterministic given the entropy, but the entropy itself must be cryptographically random. The 2048 iterations of PBKDF2 slow down brute-force attacks. The passphrase acts as a second factor.</p>
+
+            <h3 id="bip32">BIP-32: Hierarchical Deterministic (HD) Key Derivation</h3>
+            <p><strong>Purpose:</strong> Derive an unlimited number of private/public key pairs from a single seed in a tree structure.</p>
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>Use the 512-bit seed to generate a master private key and chain code</li>
+                <li>Derive child keys using HMAC-SHA512(chain_code, parent_key || index)</li>
+                <li>Split the 512-bit output: left 256 bits → child private key modifier, right 256 bits → new chain code</li>
+                <li>Support both hardened (private derivation) and non-hardened (public derivation) paths</li>
+            </ul>
+            <p><strong>Statistical properties:</strong> Each child key appears independent and uniformly random. The chain code ensures that knowing one child key does not reveal siblings. Hardened derivation prevents deriving child private keys from the parent public key.</p>
+
+            <h3 id="bip44">BIP-44: Standard Derivation Paths</h3>
+            <p><strong>Purpose:</strong> Define a standard structure for HD wallets to organize accounts and addresses across multiple coins.</p>
+            <p><strong>Path format:</strong> <code>m / 44' / coin_type' / account' / change / address_index</code></p>
+            <ul>
+                <li><code>44'</code> – BIP-44 standard (hardened)</li>
+                <li><code>coin_type'</code> – Cryptocurrency (60' for Ethereum, hardened)</li>
+                <li><code>account'</code> – Account number (0', 1', 2', ... hardened)</li>
+                <li><code>change</code> – 0 for receiving, 1 for change (not hardened)</li>
+                <li><code>address_index</code> – Address index (0, 1, 2, ... not hardened)</li>
+            </ul>
+            <p><strong>Example:</strong> <code>m/44'/60'/0'/0/0</code> is the first Ethereum address of the first account.</p>
+            <p><strong>Statistical properties:</strong> The standard path ensures wallets from different vendors can restore the same addresses. Hardened levels prevent key leakage attacks.</p>
+
+            <h3 id="secp256k1">secp256k1: Elliptic-Curve Public-Key Cryptography</h3>
+            <p><strong>Purpose:</strong> Generate a public key from a private key in a one-way, computationally infeasible-to-reverse manner. Also used for digital signatures.</p>
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>Curve equation: y² = x³ + 7 (over a large finite field, ~2²⁵⁶)</li>
+                <li>Public key Q = k · G, where k is the private key and G is the generator point</li>
+                <li>The discrete logarithm problem (finding k from Q) is computationally infeasible</li>
+                <li>Used in Bitcoin and Ethereum for key generation and ECDSA signatures</li>
+            </ul>
+            <p><strong>Statistical properties:</strong> Public keys are uniformly distributed on the curve. The mapping is deterministic and one-way. Unlike RSA, secp256k1 provides the same security with much smaller keys (256 bits vs 2048+ bits).</p>
+
+            <h3 id="keccak256">Keccak-256: Hash Function</h3>
+            <p><strong>Purpose:</strong> Irreversibly hash the public key to derive an Ethereum address. Also used throughout Ethereum for transaction hashing, Merkle trees, and storage.</p>
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>Keccak is a sponge construction with permutation function</li>
+                <li>Ethereum uses Keccak-256 (256-bit output), which is <strong>not</strong> the same as SHA3-256 (different padding)</li>
+                <li>Input: 64-byte uncompressed public key (without 0x04 prefix)</li>
+                <li>Output: 32-byte hash, take last 20 bytes as Ethereum address</li>
+            </ul>
+            <p><strong>Statistical properties:</strong> Output is uniformly distributed, collision-resistant, and preimage-resistant. Even a 1-bit change in input produces a completely different hash (avalanche effect). The 160-bit address space (2¹⁶⁰ ≈ 10⁴⁸) makes collisions astronomically unlikely.</p>
+
+            <h3 id="eip55">EIP-55: Mixed-Case Checksum Encoding</h3>
+            <p><strong>Purpose:</strong> Add error detection to Ethereum addresses without changing the underlying format or requiring extra characters.</p>
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>Take the lowercase hex address (without 0x)</li>
+                <li>Compute Keccak-256 hash of the lowercase address</li>
+                <li>For each hex character: if the corresponding hash digit ≥ 8, capitalize it; otherwise, keep lowercase</li>
+                <li>Result: mixed-case address like <code>0xAbCdEf...</code></li>
+            </ul>
+            <p><strong>Example:</strong> <code>0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed</code></p>
+            <p><strong>Statistical properties:</strong> The checksum is deterministic and verifiable. A typo will almost always produce an invalid checksum (high error detection rate). It's backwards-compatible: old software ignores case, new software validates it.</p>
+        </section>
+
+        <section>
+            <h2 id="distinctions">Key Distinctions</h2>
+
+            <h3>Key Generation vs Key Derivation</h3>
+            <ul>
+                <li><strong>Key Generation:</strong> Creating a new cryptographic key from random entropy (e.g., BIP-39 mnemonic generation, secp256k1 scalar multiplication)</li>
+                <li><strong>Key Derivation:</strong> Deterministically computing new keys from existing key material (e.g., BIP-32/BIP-44 child key derivation, PBKDF2 seed expansion)</li>
+            </ul>
+
+            <h3>Public-Key Cryptography vs Hashing</h3>
+            <ul>
+                <li><strong>Public-Key Cryptography (secp256k1):</strong> Mathematical trapdoor function. Easy to compute public key from private key, infeasible to reverse. Supports signatures and key agreement. Has algebraic structure (point addition).</li>
+                <li><strong>Hashing (Keccak-256):</strong> One-way compression function. Fixed-size output regardless of input size. No algebraic structure. Used for fingerprinting, commitments, and addresses. No way to reverse or derive related outputs.</li>
+            </ul>
+
+            <h3>Checksums vs Encoding</h3>
+            <ul>
+                <li><strong>Checksums (EIP-55):</strong> Error-detection mechanism. Adds redundancy to detect (not correct) errors. In EIP-55, achieved via mixed-case encoding.</li>
+                <li><strong>Encoding:</strong> Representation format for data. Examples: hexadecimal (base-16), base58 (Bitcoin addresses), base64. Encoding is reversible and doesn't add security, just readability.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="history">Historical and Temporal Context</h2>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-year">1977</div>
+                    <div class="timeline-content">
+                        <strong>RSA</strong> – First practical public-key cryptosystem (Rivest, Shamir, Adleman). Based on integer factorization hardness.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2001</div>
+                    <div class="timeline-content">
+                        <strong>SHA-2 / SHA-512</strong> – NIST standardized the SHA-2 family (SHA-224, SHA-256, SHA-384, SHA-512). Based on Merkle–Damgård construction.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2012</div>
+                    <div class="timeline-content">
+                        <strong>BIP-32</strong> – Hierarchical Deterministic Wallets introduced by Pieter Wuille. Enabled deriving unlimited keys from a single seed.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2013</div>
+                    <div class="timeline-content">
+                        <strong>BIP-39</strong> – Mnemonic code for generating deterministic wallets. Introduced human-readable 12-24 word backup phrases.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2014</div>
+                    <div class="timeline-content">
+                        <strong>BIP-44</strong> – Multi-account hierarchy for deterministic wallets. Standardized derivation paths across cryptocurrencies.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2015</div>
+                    <div class="timeline-content">
+                        <strong>SHA-3</strong> – NIST standardized SHA-3 based on Keccak sponge construction. Different internal design from SHA-2. Ethereum uses Keccak-256 (pre-standardization variant).
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2016</div>
+                    <div class="timeline-content">
+                        <strong>EIP-55</strong> – Mixed-case checksum addresses for Ethereum. Added error detection without breaking existing addresses.
+                    </div>
+                </div>
+            </div>
+
+            <h3>SHA-2 / SHA-512 vs Keccak / SHA-3</h3>
+            <p><strong>SHA-2 family</strong> (including SHA-512) uses the <strong>Merkle–Damgård construction</strong>: input is padded and processed in blocks through a compression function, with each block's output chained to the next. Vulnerable to length-extension attacks.</p>
+            <p><strong>Keccak / SHA-3</strong> uses a <strong>sponge construction</strong>: input is absorbed into a state array, then permuted repeatedly. Output is squeezed from the state. Resistant to length-extension attacks and structurally different from SHA-2.</p>
+            <p><strong>Ethereum and Keccak-256:</strong> Ethereum adopted Keccak before NIST finalized SHA-3. The NIST version added domain-separation padding, so <code>Keccak-256 ≠ SHA3-256</code>. Ethereum continues using the original Keccak-256 for compatibility.</p>
+        </section>
+
+        <section>
+            <h2 id="why-multiple">Why Multiple Cryptographic Techniques?</h2>
+            <p>Each primitive solves a different problem in the security and usability puzzle:</p>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Purpose</th>
+                            <th>Why Not Use One Algorithm?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>BIP-39/32/44</strong></td>
+                            <td>Key management and derivation</td>
+                            <td>Hash functions don't provide key hierarchies or human-readable backups. Public-key crypto can't derive child keys securely.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>secp256k1</strong></td>
+                            <td>Public/private key relationship, signatures</td>
+                            <td>Hash functions are one-way with no trapdoor – can't sign or prove ownership. Need algebraic structure for ECDSA.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Keccak-256</strong></td>
+                            <td>Address derivation, state hashing</td>
+                            <td>Public keys are too long for addresses (64 bytes → 20 bytes). Need collision resistance without algebraic structure.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>EIP-55</strong></td>
+                            <td>Error detection</td>
+                            <td>Pure encoding has no error detection. Full checksums (like base58check) add bytes. EIP-55 reuses existing characters cleverly.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>The pipeline combines these primitives to achieve:</p>
+            <ul>
+                <li><strong>Usability:</strong> 12-word backup instead of raw hex keys</li>
+                <li><strong>Security:</strong> One-way transformations, hardened derivation, collision resistance</li>
+                <li><strong>Compatibility:</strong> BIP standards ensure cross-wallet compatibility; EIP-55 is backwards-compatible</li>
+                <li><strong>Efficiency:</strong> secp256k1 uses 256-bit keys vs 2048+ bit RSA; Keccak is fast and parallel-friendly</li>
+                <li><strong>Error prevention:</strong> Checksums catch typos before funds are lost</li>
+            </ul>
+
+            <p>No single algorithm provides all these properties. Hashing alone can't sign transactions. Public-key crypto alone can't compress addresses or detect typos. The layered approach lets each primitive do what it does best.</p>
+        </section>
+
+        <section>
+            <h2 id="demo">Interactive Demo</h2>
+            <p>Explore the wallet pipeline with a live example. <strong>Never enter real mnemonic phrases or private keys.</strong></p>
+
+            <div class="panel">
+                <h3>Mnemonic to Address Pipeline</h3>
+                <label>
+                    Mnemonic Phrase (12 or 24 words)
+                    <input type="text" id="mnemonic" value="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about" placeholder="12 or 24 words">
+                </label>
+                <label>
+                    Optional Passphrase
+                    <input type="text" id="passphrase" placeholder="(optional)">
+                </label>
+                <label>
+                    Derivation Path
+                    <input type="text" id="path" value="m/44'/60'/0'/0/0" placeholder="m/44'/60'/0'/0/0">
+                </label>
+                <button id="derive-btn">Derive Address</button>
+                <p class="msg" id="demo-msg"></p>
+
+                <div id="demo-output" style="display: none;">
+                    <h4>Pipeline Results</h4>
+                    <div class="result-item">
+                        <strong>Seed (first 32 bytes):</strong>
+                        <code id="out-seed" class="result-code"></code>
+                    </div>
+                    <div class="result-item">
+                        <strong>Private Key:</strong>
+                        <code id="out-privkey" class="result-code"></code>
+                    </div>
+                    <div class="result-item">
+                        <strong>Public Key (uncompressed):</strong>
+                        <code id="out-pubkey" class="result-code"></code>
+                    </div>
+                    <div class="result-item">
+                        <strong>Ethereum Address:</strong>
+                        <code id="out-address" class="result-code"></code>
+                    </div>
+                    <div class="result-item">
+                        <strong>Checksummed Address (EIP-55):</strong>
+                        <code id="out-checksum" class="result-code"></code>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="statistical">Statistical Properties Summary</h2>
+
+            <h3>Randomness and Entropy</h3>
+            <ul>
+                <li><strong>BIP-39 entropy:</strong> 128–256 bits of cryptographically secure randomness. Output (mnemonic) is deterministic but unpredictable without the entropy.</li>
+                <li><strong>BIP-32 child keys:</strong> Appear statistically independent and uniformly random despite being deterministically derived.</li>
+                <li><strong>secp256k1 public keys:</strong> Uniformly distributed across the curve. No correlation between sequential private keys and their public keys.</li>
+            </ul>
+
+            <h3>One-Way Properties</h3>
+            <ul>
+                <li><strong>secp256k1:</strong> Discrete logarithm problem ensures Q = k·G is easy forward, infeasible backward (best attack ~2¹²⁸ operations).</li>
+                <li><strong>Keccak-256:</strong> Preimage resistance (can't find input from hash), collision resistance (can't find two inputs with same hash).</li>
+                <li><strong>BIP-32 hardened derivation:</strong> Parent public key cannot derive child private keys.</li>
+            </ul>
+
+            <h3>Avalanche Effect</h3>
+            <ul>
+                <li><strong>Keccak-256:</strong> Changing 1 bit of input flips ~50% of output bits. Essential for checksum (EIP-55) and address collision avoidance.</li>
+                <li><strong>PBKDF2 in BIP-39:</strong> Small passphrase change produces completely different seed.</li>
+            </ul>
+
+            <h3>Error Detection</h3>
+            <ul>
+                <li><strong>BIP-39 checksum:</strong> Last word encodes checksum of entropy (4-8 bits). Detects most transcription errors.</li>
+                <li><strong>EIP-55:</strong> Capitalization checksum. Probability of random typo passing checksum: ~2⁻¹⁵ per character.</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational purposes only. Never use real seed phrases or private keys.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="homework2.js"></script>
+</body>
+</html>

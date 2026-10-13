@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics Homework Collection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <h1>Statistics</h1>
+            <p class="course-info">2026/27 · Sapienza University of Rome</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="intro">
+            <h2>Homework Collection</h2>
+            <p class="lead">A collection of assignments exploring cryptography, statistics, and distributed systems through hands-on implementations.</p>
+        </div>
+
+        <div class="homework-grid">
+            <article class="hw-card">
+                <div class="hw-header">
+                    <span class="hw-number">01</span>
+                    <span class="hw-topic">Cryptography</span>
+                </div>
+                <h3><a href="homework1.html">Toy Elliptic Curve</a></h3>
+                <p>Understanding elliptic-curve scalar multiplication through a toy implementation. Computing public keys from private keys using the curve y² = x³ + 7 (mod 17).</p>
+                <div class="hw-meta">
+                    <span>Private key → Public key</span>
+                    <span>ECDLP</span>
+                    <span>Point addition</span>
+                </div>
+            </article>
+
+            <article class="hw-card">
+                <div class="hw-header">
+                    <span class="hw-number">02</span>
+                    <span class="hw-topic">Wallet Cryptography</span>
+                </div>
+                <h3><a href="homework2.html">Ethereum Wallet Pipeline</a></h3>
+                <p>Exploring the complete cryptographic pipeline from mnemonic seed phrases to checksummed Ethereum addresses. Understanding BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, and EIP-55.</p>
+                <div class="hw-meta">
+                    <span>Key derivation</span>
+                    <span>Hashing</span>
+                    <span>Checksums</span>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational purposes only. Never use real seed phrases or private keys.</p>
+        </div>
+    </footer>
+</body>
+</html>

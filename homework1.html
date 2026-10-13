@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework 1: Toy Elliptic Curve</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Homework 1: Toy elliptic curve</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <p class="eyebrow">Homework 1 · Cryptography</p>
+            <h1>Toy Elliptic Curve</h1>
+            <p class="lead">A private key is just a number k. Multiplying a base point G on an elliptic curve by k gives the public key Q = kG: easy to compute, but hard to reverse. Here the idea is shown on a toy curve small enough to follow by hand.</p>
+        </div>
+
+        <section>
+            <h2 id="summary">Summary</h2>
+            <p>The curve is <code>y² = x³ + 7 (mod 17)</code> with base point <code>G = (1, 5)</code> and private key <code>k = 6</code>. Computing 1G, 2G, …, 6G gives the toy public key <strong>Q = 6G = (5, 8)</strong>. The same result comes out of the faster double-and-add method.</p>
+            <p>The curve has 17 points plus the point at infinity, so 18 elements in total. The point G = (1, 5) has order 9: 9G is the point at infinity and the sequence then repeats. This example demonstrates the principle behind Ethereum's key generation, which uses the much larger secp256k1 curve for real security.</p>
+        </section>
+
+        <section>
+            <h2 id="task-1">Task: Curve and Toy Public Key</h2>
+            <p>Curve: <code>y² = x³ + 7 (mod 17)</code>. The public key is <code>Q = kG</code>, where k is the private key and G the base point.</p>
+
+            <div class="split">
+                <div>
+                    <h3>How it works</h3>
+
+                    <h4>Point addition and doubling</h4>
+                    <p>To add two different points P₁ = (x₁, y₁) and P₂ = (x₂, y₂), draw the line through them. It meets the curve in a third point; reflecting that point across the x axis gives P₁ + P₂. Algebraically, the slope of the line is</p>
+                    <p><code>λ = (y₂ − y₁) / (x₂ − x₁)</code></p>
+                    <p>and the result is</p>
+                    <p><code>x₃ = λ² − x₁ − x₂</code>, <code>y₃ = λ(x₁ − x₃) − y₁</code>.</p>
+
+                    <p>When P₁ = P₂ (doubling), the line is the tangent at the point and the slope is <code>λ = (3x² + a) / (2y)</code>. For this curve a = 0, so it becomes <code>3x² / 2y</code>.</p>
+
+                    <p>All operations are done modulo 17, and "division" means multiplication by the modular inverse. For example, the inverse of 10 is 12, because 10 · 12 = 120 = 7 · 17 + 1. Negative numbers are brought back into the range 0 to 16.</p>
+
+                    <p><strong>Worked example, 2G = G + G with G = (1, 5):</strong></p>
+                    <ul>
+                        <li>λ = 3 · 1² / (2 · 5) = 3 / 10 = 3 · 12 = 36 ≡ 2 (mod 17)</li>
+                        <li>x₃ = 2² − 1 − 1 = 2</li>
+                        <li>y₃ = 2 · (1 − 2) − 5 = −7 ≡ 10 (mod 17)</li>
+                        <li>so 2G = (2, 10), and 10² = 100 ≡ 15 = 2³ + 7, so it is on the curve.</li>
+                    </ul>
+
+                    <p>Next, 3G = G + 2G: λ = (10 − 5) / (2 − 1) = 5, x₃ = 25 − 1 − 2 = 22 ≡ 5, y₃ = 5 · (1 − 5) − 5 = −25 ≡ 9, so 3G = (5, 9).</p>
+
+                    <h4>The point at infinity</h4>
+                    <p>The point at infinity (INF) is the neutral element of the group: P + INF = P. It appears when a point is added to its opposite −P = (x, −y), because the line through them is vertical and meets the curve nowhere else. Here G + 8G = (1, 5) + (1, 12) = INF, so 9G = INF. The order of G is therefore 9: after 9 steps the sequence goes back to G.</p>
+
+                    <h4>Double-and-add</h4>
+                    <p>Repeated addition needs k − 1 additions, which is hopeless for a 256-bit k. Double-and-add uses the binary expansion of k. The code keeps a running value equal to G, 2G, 4G, 8G, … (each one is a doubling of the previous), and adds it to the result whenever the corresponding bit of k is 1.</p>
+                    <p>For k = 6 = 110 in binary, reading from the lowest bit: bit 0 is 0 (skip G), bit 1 is 1 (add 2G), bit 2 is 1 (add 4G). So 6G = 2G + 4G = (2, 10) + (12, 1) = (5, 8), the same as the six additions in the table. For a 256-bit k this takes at most about 256 doublings and 256 additions.</p>
+
+                    <h4>Why this is only a toy</h4>
+                    <p>Given Q = (5, 8), recovering k means trying k = 1, 2, 3, … until kG = Q. With 18 elements this takes six steps. On the real curve secp256k1 the group order is about 2²⁵⁶, and the best known generic attack (Pollard's rho) needs about 2¹²⁸ operations. That is the elliptic curve discrete logarithm problem (ECDLP), and the one-way behavior of Q = kG rests on it.</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Run it</h3>
+                    <label>G x <input id="t1-gx" type="number" value="1" min="0" max="16"></label>
+                    <label>G y <input id="t1-gy" type="number" value="5" min="0" max="16"></label>
+                    <label>k <input id="t1-k" type="number" value="6" min="1" max="100"></label>
+                    <button id="t1-run" type="button">Compute</button>
+                    <p id="t1-msg" class="msg" role="status"></p>
+                    <ul class="chips" id="t1-steps"></ul>
+                    <p class="result">Toy public key: <output id="t1-pubkey">–</output></p>
+                    <p class="legend">Each chip shows nG. The check mark means the point satisfies the curve equation.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="task-2">Visualization</h2>
+            <p>Every dot is a point of the curve mod 17. Press Compute to see all intermediate steps G, 2G, 3G, … appear.</p>
+
+            <div class="panel">
+                <label>G x <input id="t2-gx" type="number" value="1" min="0" max="16"></label>
+                <label>G y <input id="t2-gy" type="number" value="5" min="0" max="16"></label>
+                <label>k <input id="t2-k" type="number" value="6" min="1" max="20"></label>
+                <button id="t2-run" type="button">Compute & Visualize</button>
+                <p id="t2-msg" class="msg" role="status"></p>
+                <canvas id="t2-plot" width="560" height="560" aria-label="Points of the toy curve mod 17 and the sequence G, 2G, 3G, ..."></canvas>
+                <p class="legend"><span class="dot grey"></span> points of the curve <span class="dot acc"></span> visited multiples of G <span class="dot ring"></span> final public key</p>
+                <p class="note">The picture shows why the toy example is not secure: with so few points, one can simply list them all. The scattered look is the property that matters for real keys, where the group has about 2²⁵⁶ elements and no such enumeration is possible.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="console">Console Output</h2>
+            <p>Detailed step-by-step computation showing all intermediate points:</p>
+            <div class="panel">
+                <label>G x <input id="t3-gx" type="number" value="1" min="0" max="16"></label>
+                <label>G y <input id="t3-gy" type="number" value="5" min="0" max="16"></label>
+                <label>k <input id="t3-k" type="number" value="6" min="1" max="20"></label>
+                <button id="t3-run" type="button">Show Steps</button>
+                <div id="t3-output" class="output"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational purposes only. Never use real seed phrases or private keys.</p>
+        </div>
+    </footer>
+
+    <script src="homework1.js"></script>
+</body>
+</html>

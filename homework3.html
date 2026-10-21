@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework 3: Cryptographic Schemes and Cryptanalysis</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Homework 3: Cryptographic Schemes and Cryptanalysis</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <p class="eyebrow">Homework 3 · Cryptography & Cryptanalysis</p>
+            <h1>Encryption Schemes and Statistical Attacks</h1>
+            <p class="lead">Comparing a toy elliptic-curve encryption scheme with the classical Caesar cipher, and exploring statistical cryptanalysis techniques to break weak cryptographic systems.</p>
+        </div>
+
+        <section>
+            <h2 id="summary">Summary</h2>
+            <p>This assignment explores two encryption schemes with vastly different security properties: a <strong>toy elliptic-curve cryptosystem</strong> based on secp256k1 with restricted key space, and the classical <strong>Caesar cipher</strong>. Both schemes can be broken, but for fundamentally different reasons.</p>
+            <p>The toy ECC scheme uses proper cryptographic primitives but becomes vulnerable due to an artificially small key space (designed for educational purposes). The Caesar cipher, despite having an even smaller key space (26 keys), reveals a different weakness: its statistical patterns. This homework demonstrates how cryptanalysis adapts to exploit different vulnerabilities in cryptographic systems.</p>
+        </section>
+
+        <section>
+            <h2 id="ecc-encryption">Part 1: Toy ECC Encryption/Decryption</h2>
+            <p>Using the elliptic curve from Homework 1 (y² = x³ + 7 mod 17), we implement a simplified version of ElGamal encryption. The scheme maps plaintext characters to curve points, encrypts them using elliptic-curve point multiplication, and decrypts using the discrete logarithm relationship.</p>
+
+            <div class="split">
+                <div>
+                    <h3>How it works</h3>
+                    <h4>Key Generation</h4>
+                    <ul>
+                        <li>Choose a private key k (small range for this toy example: 1-8)</li>
+                        <li>Base point G = (1, 5)</li>
+                        <li>Public key Q = k·G</li>
+                    </ul>
+
+                    <h4>Encryption</h4>
+                    <p>For each character in the plaintext:</p>
+                    <ol>
+                        <li>Map character to a number (A=0, B=1, ..., Z=25, space=26)</li>
+                        <li>Find a point on the curve corresponding to the message value</li>
+                        <li>Choose a random ephemeral key r (1-8)</li>
+                        <li>Compute C₁ = r·G (ephemeral public key)</li>
+                        <li>Compute C₂ = M + r·Q (encrypted message point)</li>
+                        <li>Ciphertext is the pair (C₁, C₂)</li>
+                    </ol>
+
+                    <h4>Decryption</h4>
+                    <ol>
+                        <li>Compute M = C₂ - k·C₁</li>
+                        <li>Map the point back to a number</li>
+                        <li>Convert number back to character</li>
+                    </ol>
+
+                    <p class="note"><strong>Note:</strong> This is a simplified toy implementation. Real ECC encryption would use proper encoding schemes and much larger curves. The restricted key space (1-8) makes this vulnerable to brute-force attacks.</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>ECC Encryption Demo</h3>
+                    <label>Message <input id="ecc-msg" type="text" value="HELLO" maxlength="10" placeholder="Short message (A-Z, space)"></label>
+                    <label>Private Key k (1-8) <input id="ecc-k" type="number" value="6" min="1" max="8"></label>
+                    <button id="ecc-encrypt-btn" type="button">Encrypt</button>
+                    <p id="ecc-encrypt-msg" class="msg" role="status"></p>
+                    <div class="result-item">
+                        <strong>Public Key Q:</strong>
+                        <output id="ecc-pubkey">–</output>
+                    </div>
+                    <div class="result-item">
+                        <strong>Ciphertext:</strong>
+                        <output id="ecc-ciphertext" class="result-code">–</output>
+                    </div>
+                    <button id="ecc-decrypt-btn" type="button" style="margin-top: 1rem;">Decrypt</button>
+                    <p id="ecc-decrypt-msg" class="msg" role="status"></p>
+                    <div class="result-item">
+                        <strong>Decrypted:</strong>
+                        <output id="ecc-decrypted">–</output>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="caesar">Part 2: Caesar Cipher</h2>
+            <p>The Caesar cipher is a simple substitution cipher where each letter is shifted by a fixed number of positions in the alphabet. With shift k=3, A becomes D, B becomes E, and so on.</p>
+
+            <div class="split">
+                <div>
+                    <h3>How it works</h3>
+                    <h4>Encryption</h4>
+                    <p>For each letter in plaintext: <code>ciphertext[i] = (plaintext[i] + k) mod 26</code></p>
+
+                    <h4>Decryption</h4>
+                    <p>For each letter in ciphertext: <code>plaintext[i] = (ciphertext[i] - k) mod 26</code></p>
+
+                    <h4>Key Space</h4>
+                    <p>Only 26 possible keys (0-25), where k=0 is the identity and k=26 equals k=0. This makes exhaustive search trivial.</p>
+
+                    <h4>Statistical Weakness</h4>
+                    <p>The cipher preserves letter frequency patterns. In English, 'E' is the most common letter (~12.7%), followed by 'T', 'A', 'O', etc. A Caesar-encrypted text will have the same frequency distribution, just shifted.</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Caesar Cipher Demo</h3>
+                    <label>Message <input id="caesar-msg" type="text" value="HELLO WORLD" placeholder="Your message"></label>
+                    <label>Shift (0-25) <input id="caesar-k" type="number" value="3" min="0" max="25"></label>
+                    <button id="caesar-encrypt-btn" type="button">Encrypt</button>
+                    <p id="caesar-encrypt-msg" class="msg" role="status"></p>
+                    <div class="result-item">
+                        <strong>Ciphertext:</strong>
+                        <output id="caesar-ciphertext">–</output>
+                    </div>
+                    <button id="caesar-decrypt-btn" type="button" style="margin-top: 1rem;">Decrypt</button>
+                    <p id="caesar-decrypt-msg" class="msg" role="status"></p>
+                    <div class="result-item">
+                        <strong>Decrypted:</strong>
+                        <output id="caesar-decrypted">–</output>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="comparison">Part 3: Comparison of the Two Schemes</h2>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Toy ECC</th>
+                            <th>Caesar Cipher</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Key Space</strong></td>
+                            <td>8 keys (toy), 2²⁵⁶ keys (real secp256k1)</td>
+                            <td>26 keys</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Encryption Method</strong></td>
+                            <td>Point multiplication on elliptic curve</td>
+                            <td>Modular addition (shift)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ciphertext Size</strong></td>
+                            <td>Each character → 2 curve points (4 coordinates)</td>
+                            <td>Same size as plaintext</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Statistical Properties</strong></td>
+                            <td>Randomized (ephemeral key r), same plaintext produces different ciphertexts</td>
+                            <td>Deterministic, preserves frequency distribution</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Vulnerability</strong></td>
+                            <td>Small key space → brute-force attack</td>
+                            <td>Frequency analysis, brute-force</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Security (properly configured)</strong></td>
+                            <td>Strong (ECDLP hardness)</td>
+                            <td>None (always trivial to break)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Similarities</h3>
+            <ul>
+                <li>Both use a secret key for encryption and decryption</li>
+                <li>Both are symmetric in nature (same key encrypts and decrypts)</li>
+                <li>Both can be broken with exhaustive key search in their toy/weak configurations</li>
+                <li>Both are vulnerable when key space is small enough</li>
+            </ul>
+
+            <h3>Differences</h3>
+            <ul>
+                <li><strong>Mathematical foundation:</strong> ECC uses elliptic curves and discrete logarithm problem; Caesar uses simple modular arithmetic</li>
+                <li><strong>Randomization:</strong> ECC uses ephemeral keys (semantic security); Caesar is deterministic</li>
+                <li><strong>Ciphertext expansion:</strong> ECC has significant expansion; Caesar has none</li>
+                <li><strong>Statistical patterns:</strong> ECC hides patterns; Caesar preserves them</li>
+                <li><strong>Modern security potential:</strong> ECC can be secure with proper parameters; Caesar cannot</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="frequency-attack">Part 4: Statistical Cryptanalysis of Caesar Cipher</h2>
+            <p>Given a sufficiently long ciphertext in English, we can recover the key by analyzing letter frequencies.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Attack Methods</h3>
+
+                    <h4>1. Frequency Analysis</h4>
+                    <p>Compare the frequency distribution of letters in the ciphertext with known English letter frequencies. The shift that best aligns the distributions is likely the key.</p>
+                    <p><strong>Expected English frequencies:</strong> E (12.7%), T (9.1%), A (8.2%), O (7.5%), I (7.0%), N (6.7%), S (6.3%), H (6.1%), R (6.0%)...</p>
+
+                    <h4>2. Chi-Squared Test</h4>
+                    <p>For each possible shift k (0-25), decrypt the ciphertext and compute the chi-squared statistic comparing observed vs expected frequencies:</p>
+                    <p><code>χ² = Σ (observed - expected)² / expected</code></p>
+                    <p>The shift with the lowest χ² value is most likely correct.</p>
+
+                    <h4>3. Exhaustive Search</h4>
+                    <p>With only 26 keys, we can simply try all shifts and visually inspect or use dictionary matching to identify the correct plaintext.</p>
+
+                    <h4>4. N-gram Scoring (Optional)</h4>
+                    <p>Use bigram or trigram frequencies (e.g., "TH", "HE", "THE") to score decryption attempts. Real English text will have high n-gram scores.</p>
+
+                    <h3>Effectiveness and Limitations</h3>
+                    <ul>
+                        <li><strong>Text length:</strong> Longer texts give more reliable frequency distributions. Short texts may have atypical frequencies.</li>
+                        <li><strong>Language dependency:</strong> Requires knowing the plaintext language and its frequency distribution.</li>
+                        <li><strong>Non-standard texts:</strong> Technical jargon, names, or special content may have unusual letter distributions.</li>
+                        <li><strong>Always works given enough data:</strong> Caesar cipher cannot resist statistical analysis with sufficient ciphertext.</li>
+                    </ul>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Frequency Attack Demo</h3>
+                    <label>Ciphertext <textarea id="freq-cipher" rows="4" placeholder="Enter Caesar-encrypted text here...">KHOOR ZRUOG WKLV LV D WHVW PHVVDJH WR GHPRQVWUDWH IUHTXHQFB DQDOBVLV</textarea></label>
+                    <button id="freq-attack-btn" type="button">Analyze & Break</button>
+                    <p id="freq-msg" class="msg" role="status"></p>
+                    <div id="freq-results" style="display: none;">
+                        <div class="result-item">
+                            <strong>Most Likely Key:</strong>
+                            <output id="freq-key">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Decrypted Text:</strong>
+                            <output id="freq-plaintext">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Chi-Squared Value:</strong>
+                            <output id="freq-chi2">–</output>
+                        </div>
+                        <canvas id="freq-chart" width="600" height="300" aria-label="Frequency distribution chart"></canvas>
+                        <p class="legend">Blue = Ciphertext frequencies, Orange = Expected English frequencies</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="ecc-attack">Part 5: Breaking the Toy ECC Scheme</h2>
+            <p>The toy ECC implementation restricts the private key to the range 1-8, making it vulnerable to brute-force attack despite using proper elliptic-curve cryptography.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Attack Strategy</h3>
+                    <h4>Brute-Force Key Recovery</h4>
+                    <ol>
+                        <li>Given: Public key Q and some ciphertext (C₁, C₂)</li>
+                        <li>Try all possible private keys k ∈ {1, 2, ..., 8}</li>
+                        <li>For each k, compute k·G and compare with Q</li>
+                        <li>When k·G = Q, we've found the private key</li>
+                        <li>Use k to decrypt the message</li>
+                    </ol>
+
+                    <h3>Comparison with Caesar Attack</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Toy ECC</th>
+                                <th>Caesar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Attack Type</strong></td>
+                                <td>Exhaustive key search</td>
+                                <td>Statistical + exhaustive</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Complexity</strong></td>
+                                <td>8 keys to try</td>
+                                <td>26 keys (or immediate with freq. analysis)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Weakness Exploited</strong></td>
+                                <td>Small key space only</td>
+                                <td>Small key space + statistical patterns</td>
+                            </tr>
+                            <tr>
+                                <td><strong>With Proper Parameters</strong></td>
+                                <td>Infeasible (~2¹²⁸ operations)</td>
+                                <td>Always trivial (26 keys)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Why This Doesn't Work on Real ECC</h3>
+                    <ul>
+                        <li><strong>Key space size:</strong> secp256k1 has ~2²⁵⁶ possible keys. Trying all would take longer than the age of the universe.</li>
+                        <li><strong>ECDLP hardness:</strong> No known algorithm (classical or quantum) can solve the discrete logarithm problem on properly-sized curves in polynomial time.</li>
+                        <li><strong>Statistical resistance:</strong> ECC with proper implementation doesn't leak information through patterns (unlike Caesar).</li>
+                        <li><strong>This attack exploits implementation weakness, not cryptographic weakness.</strong></li>
+                    </ul>
+
+                    <h3>Alternative Attacks (if they existed)</h3>
+                    <ul>
+                        <li><strong>Side-channel attacks:</strong> Timing, power analysis, electromagnetic emanation</li>
+                        <li><strong>Implementation flaws:</strong> Weak random number generators, nonce reuse</li>
+                        <li><strong>Mathematical breakthroughs:</strong> New algorithms for ECDLP (none currently known)</li>
+                        <li><strong>Quantum computers:</strong> Shor's algorithm could break ECC in polynomial time</li>
+                    </ul>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>ECC Brute-Force Attack</h3>
+                    <p>First, encrypt a message above, then attack it here:</p>
+                    <label>Public Key Q <input id="attack-pubkey" type="text" placeholder="e.g., (5, 8)" readonly></label>
+                    <label>Ciphertext <textarea id="attack-cipher" rows="3" placeholder="Paste ciphertext from encryption above" readonly></textarea></label>
+                    <button id="attack-btn" type="button">Launch Attack</button>
+                    <p id="attack-msg" class="msg" role="status"></p>
+                    <div id="attack-results" style="display: none;">
+                        <div class="result-item">
+                            <strong>Recovered Private Key:</strong>
+                            <output id="attack-key">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Decrypted Message:</strong>
+                            <output id="attack-plaintext">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Keys Tried:</strong>
+                            <output id="attack-tries">–</output>
+                        </div>
+                        <p class="note">Attack successful! The restricted key space (1-8) made brute-force trivial. Real ECC with 256-bit keys would require ~2¹²⁸ operations.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="conclusion">Conclusion</h2>
+            <p>This homework demonstrates two fundamental cryptanalytic approaches:</p>
+            <ul>
+                <li><strong>Exploiting small key spaces:</strong> Both schemes fall to brute-force when keys are limited (8 vs 26)</li>
+                <li><strong>Exploiting statistical patterns:</strong> Caesar cipher's deterministic nature reveals language structure; ECC's randomization prevents this</li>
+            </ul>
+            <p>The toy ECC scheme fails due to <em>misconfiguration</em> (intentionally small key space), while Caesar cipher fails due to <em>fundamental design flaws</em> (no diffusion, preserves patterns). Properly implemented ECC with full key space remains secure; Caesar cipher does not.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational purposes only. Never use toy encryption for real data.</p>
+        </div>
+    </footer>
+
+    <script src="homework3.js"></script>
+</body>
+</html>

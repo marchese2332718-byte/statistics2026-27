@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework 4: Stochastic Penetration Models</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Homework 4: Stochastic Penetration Models</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <p class="eyebrow">Homework 4 · Stochastic Processes</p>
+            <h1>Penetration Models and Limit Theorems</h1>
+            <p class="lead">Modeling system penetration using Bernoulli and Rademacher stochastic processes. Exploring the Law of Large Numbers and Central Limit Theorem through Monte Carlo simulations of n systems under attack.</p>
+        </div>
+
+        <section>
+            <h2 id="summary">Summary</h2>
+            <p>This assignment models the penetration process of <strong>m attackers</strong> targeting <strong>n systems</strong> using stochastic processes with independent and identically distributed (i.i.d.) increments X₁, X₂, ..., representing the penetration score at each step.</p>
+            <p>We consider two models:</p>
+            <ul>
+                <li><strong>Bernoulli model:</strong> Xᵢ ∈ {0,1}, with P(Xᵢ = 1) = p (asymmetric, representing successful vs unsuccessful penetration attempts)</li>
+                <li><strong>Rademacher model:</strong> Xᵢ ∈ {−1,+1}, with P(Xᵢ = +1) = P(Xᵢ = −1) = 1/2 (symmetric, zero-mean, representing competing attack/defense dynamics)</li>
+            </ul>
+            <p>For increasing values of n, we simulate multiple trajectories and study the distributions of:</p>
+            <ul>
+                <li><strong>Total score:</strong> Sₙ = ∑ᵢ₌₁ⁿ Xᵢ</li>
+                <li><strong>Average score:</strong> Sₙ/n = (1/n)∑ᵢ₌₁ⁿ Xᵢ</li>
+                <li><strong>Normalized total score:</strong> Sₙ/√n = (1/√n)∑ᵢ₌₁ⁿ Xᵢ</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="models">Stochastic Models</h2>
+
+            <div class="model-comparison">
+                <div class="model-box">
+                    <h3>Bernoulli Model</h3>
+                    <p><strong>Definition:</strong> Xᵢ ∈ {0, 1}</p>
+                    <p>P(Xᵢ = 1) = p, P(Xᵢ = 0) = 1 − p</p>
+                    <p><strong>Mean:</strong> E[Xᵢ] = p</p>
+                    <p><strong>Variance:</strong> Var(Xᵢ) = p(1−p)</p>
+                    <p><strong>Interpretation:</strong> Each step represents an attack attempt. Xᵢ = 1 means successful penetration, Xᵢ = 0 means failure. The parameter p represents the skill level of attackers or vulnerability of systems.</p>
+                </div>
+
+                <div class="model-box">
+                    <h3>Rademacher Model</h3>
+                    <p><strong>Definition:</strong> Xᵢ ∈ {−1, +1}</p>
+                    <p>P(Xᵢ = +1) = P(Xᵢ = −1) = 1/2</p>
+                    <p><strong>Mean:</strong> E[Xᵢ] = 0</p>
+                    <p><strong>Variance:</strong> Var(Xᵢ) = 1</p>
+                    <p><strong>Interpretation:</strong> Each step represents a symmetric contest between attack (+1) and defense (−1). The zero mean models a fair game where neither side has systematic advantage. This represents an adversarial security scenario.</p>
+                </div>
+            </div>
+
+            <h3>Key Properties</h3>
+            <ul>
+                <li><strong>Independence:</strong> Each Xᵢ is independent of others (attacks on different systems are uncorrelated)</li>
+                <li><strong>Identical distribution:</strong> All Xᵢ follow the same distribution (systems/attackers are homogeneous)</li>
+                <li><strong>Total score Sₙ:</strong> Represents aggregate penetration across n systems</li>
+                <li><strong>Average score Sₙ/n:</strong> Represents penetration rate per system</li>
+                <li><strong>Normalized score Sₙ/√n:</strong> Properly scaled for CLT convergence</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="bernoulli-sim">Bernoulli Model Simulation</h2>
+            <p>Simulate penetration attempts with success probability p. As n increases, observe convergence according to the Law of Large Numbers.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Expected Behavior</h3>
+
+                    <h4>Law of Large Numbers (LLN)</h4>
+                    <p>The average score Sₙ/n converges in probability to the expected value p:</p>
+                    <p><code>Sₙ/n → p as n → ∞</code></p>
+                    <p>This means the empirical penetration rate stabilizes around the theoretical probability p for large n.</p>
+
+                    <h4>Total Score Growth</h4>
+                    <p><strong>E[Sₙ] = np</strong> grows linearly with n</p>
+                    <p><strong>Var(Sₙ) = np(1−p)</strong> also grows linearly</p>
+                    <p><strong>SD(Sₙ) = √(np(1−p))</strong> grows as √n</p>
+
+                    <h4>Central Limit Theorem</h4>
+                    <p>The standardized total score converges to a normal distribution:</p>
+                    <p><code>(Sₙ − np) / √(np(1−p)) → N(0,1)</code></p>
+                    <p>For the normalized score Sₙ/√n:</p>
+                    <p><code>Sₙ/√n → N(p√n, p(1−p))</code></p>
+                    <p>The mean grows as √n, variance remains constant.</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Simulation Controls</h3>
+                    <label>Number of systems (n)
+                        <input id="bernoulli-n" type="number" value="100" min="10" max="10000" step="10">
+                    </label>
+                    <label>Success probability (p)
+                        <input id="bernoulli-p" type="number" value="0.6" min="0.01" max="0.99" step="0.01">
+                    </label>
+                    <label>Number of trajectories
+                        <input id="bernoulli-trajectories" type="number" value="1000" min="100" max="10000" step="100">
+                    </label>
+                    <button id="bernoulli-simulate-btn" type="button">Run Simulation</button>
+                    <p id="bernoulli-msg" class="msg" role="status"></p>
+
+                    <div id="bernoulli-results" style="display: none;">
+                        <h4>Results</h4>
+                        <div class="result-item">
+                            <strong>E[Sₙ] (theoretical):</strong>
+                            <output id="bernoulli-expected-total">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Mean Sₙ (simulated):</strong>
+                            <output id="bernoulli-mean-total">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>E[Sₙ/n] (theoretical):</strong>
+                            <output id="bernoulli-expected-avg">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Mean Sₙ/n (simulated):</strong>
+                            <output id="bernoulli-mean-avg">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Var(Sₙ/n) (simulated):</strong>
+                            <output id="bernoulli-var-avg">–</output>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bernoulli-charts" style="display: none; margin-top: 2rem;">
+                <h3>Distribution Visualizations</h3>
+                <div class="chart-grid">
+                    <div>
+                        <h4>Total Score Sₙ</h4>
+                        <canvas id="bernoulli-total-chart" width="400" height="300"></canvas>
+                    </div>
+                    <div>
+                        <h4>Average Score Sₙ/n</h4>
+                        <canvas id="bernoulli-avg-chart" width="400" height="300"></canvas>
+                    </div>
+                    <div>
+                        <h4>Normalized Score Sₙ/√n</h4>
+                        <canvas id="bernoulli-norm-chart" width="400" height="300"></canvas>
+                    </div>
+                    <div>
+                        <h4>Standardized Score (CLT)</h4>
+                        <canvas id="bernoulli-std-chart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="rademacher-sim">Rademacher Model Simulation</h2>
+            <p>Simulate symmetric attack/defense dynamics with zero mean. Observe random walk behavior and CLT convergence to standard normal.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Expected Behavior</h3>
+
+                    <h4>Law of Large Numbers</h4>
+                    <p>The average score converges to the expected value 0:</p>
+                    <p><code>Sₙ/n → 0 as n → ∞</code></p>
+                    <p>Despite random fluctuations, the average penetration score approaches zero for large n, reflecting the balanced attack/defense model.</p>
+
+                    <h4>Random Walk Behavior</h4>
+                    <p><strong>E[Sₙ] = 0</strong> (zero drift)</p>
+                    <p><strong>Var(Sₙ) = n</strong> (variance grows linearly)</p>
+                    <p><strong>SD(Sₙ) = √n</strong> (typical deviation grows as √n)</p>
+                    <p>The total score Sₙ performs a symmetric random walk, wandering ±√n around zero.</p>
+
+                    <h4>Central Limit Theorem</h4>
+                    <p>The normalized score converges to standard normal:</p>
+                    <p><code>Sₙ/√n → N(0, 1) as n → ∞</code></p>
+                    <p>This is the cleanest demonstration of CLT since:</p>
+                    <ul>
+                        <li>Mean is exactly 0 (no centering needed)</li>
+                        <li>Variance is exactly 1 (no rescaling needed)</li>
+                        <li>Distribution is symmetric</li>
+                    </ul>
+
+                    <h4>Security Interpretation</h4>
+                    <p>In a balanced security scenario, the aggregate score has zero expectation but √n standard deviation. For large networks (n = 10,000), typical scores range from −100 to +100, showing that even in fair contests, randomness creates substantial aggregate variation.</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Simulation Controls</h3>
+                    <label>Number of systems (n)
+                        <input id="rademacher-n" type="number" value="100" min="10" max="10000" step="10">
+                    </label>
+                    <label>Number of trajectories
+                        <input id="rademacher-trajectories" type="number" value="1000" min="100" max="10000" step="100">
+                    </label>
+                    <button id="rademacher-simulate-btn" type="button">Run Simulation</button>
+                    <p id="rademacher-msg" class="msg" role="status"></p>
+
+                    <div id="rademacher-results" style="display: none;">
+                        <h4>Results</h4>
+                        <div class="result-item">
+                            <strong>E[Sₙ] (theoretical):</strong>
+                            <output id="rademacher-expected-total">0</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Mean Sₙ (simulated):</strong>
+                            <output id="rademacher-mean-total">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>E[Sₙ/n] (theoretical):</strong>
+                            <output id="rademacher-expected-avg">0</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Mean Sₙ/n (simulated):</strong>
+                            <output id="rademacher-mean-avg">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Var(Sₙ/n) (simulated):</strong>
+                            <output id="rademacher-var-avg">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>E[Var(Sₙ/n)]:</strong>
+                            <output id="rademacher-expected-var">–</output>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="rademacher-charts" style="display: none; margin-top: 2rem;">
+                <h3>Distribution Visualizations</h3>
+                <div class="chart-grid">
+                    <div>
+                        <h4>Total Score Sₙ</h4>
+                        <canvas id="rademacher-total-chart" width="400" height="300"></canvas>
+                    </div>
+                    <div>
+                        <h4>Average Score Sₙ/n</h4>
+                        <canvas id="rademacher-avg-chart" width="400" height="300"></canvas>
+                    </div>
+                    <div>
+                        <h4>Normalized Score Sₙ/√n</h4>
+                        <canvas id="rademacher-norm-chart" width="400" height="300"></canvas>
+                    </div>
+                    <div>
+                        <h4>Comparison with N(0,1)</h4>
+                        <canvas id="rademacher-comparison-chart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="convergence">Convergence Study: Varying n</h2>
+            <p>Investigate how convergence behavior changes as the number of systems n increases.</p>
+
+            <div class="split">
+                <div>
+                    <h3>What to Observe</h3>
+
+                    <h4>Law of Large Numbers</h4>
+                    <ul>
+                        <li><strong>Sₙ/n convergence:</strong> As n increases, the distribution of Sₙ/n should become more concentrated around the mean (p for Bernoulli, 0 for Rademacher)</li>
+                        <li><strong>Variance decay:</strong> Var(Sₙ/n) = Var(Sₙ)/n² decreases as 1/n</li>
+                        <li><strong>Practical implication:</strong> For large networks, average penetration rate is highly predictable</li>
+                    </ul>
+
+                    <h4>Central Limit Theorem</h4>
+                    <ul>
+                        <li><strong>Shape convergence:</strong> Histograms should increasingly resemble bell curves</li>
+                        <li><strong>Normalized score:</strong> Sₙ/√n should stabilize to a fixed distribution</li>
+                        <li><strong>For Rademacher:</strong> Should converge to N(0,1)</li>
+                        <li><strong>Q-Q plots:</strong> Points should align better with theoretical normal as n grows</li>
+                    </ul>
+
+                    <h4>Different Normalizations</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Quantity</th>
+                                <th>Growth Rate</th>
+                                <th>Variance</th>
+                                <th>Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Sₙ</td>
+                                <td>O(n)</td>
+                                <td>O(n)</td>
+                                <td>Total impact</td>
+                            </tr>
+                            <tr>
+                                <td>Sₙ/n</td>
+                                <td>O(1)</td>
+                                <td>O(1/n) → 0</td>
+                                <td>Average rate (LLN)</td>
+                            </tr>
+                            <tr>
+                                <td>Sₙ/√n</td>
+                                <td>O(√n)</td>
+                                <td>O(1)</td>
+                                <td>CLT normalization</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Convergence Analysis</h3>
+                    <label>Model
+                        <select id="convergence-model">
+                            <option value="bernoulli">Bernoulli</option>
+                            <option value="rademacher">Rademacher</option>
+                        </select>
+                    </label>
+                    <label>Success probability p (Bernoulli only)
+                        <input id="convergence-p" type="number" value="0.6" min="0.01" max="0.99" step="0.01">
+                    </label>
+                    <label>n values (comma-separated)
+                        <input id="convergence-n-values" type="text" value="10,50,100,500,1000,5000">
+                    </label>
+                    <label>Trajectories per n
+                        <input id="convergence-trajectories" type="number" value="1000" min="100" max="5000" step="100">
+                    </label>
+                    <button id="convergence-run-btn" type="button">Run Convergence Study</button>
+                    <p id="convergence-msg" class="msg" role="status"></p>
+                </div>
+            </div>
+
+            <div id="convergence-charts" style="display: none; margin-top: 2rem;">
+                <h3>Convergence Visualizations</h3>
+                <div class="chart-grid">
+                    <div>
+                        <h4>Var(Sₙ/n) vs n</h4>
+                        <canvas id="convergence-variance-chart" width="400" height="300"></canvas>
+                        <p class="chart-note">Should decay as 1/n (LLN)</p>
+                    </div>
+                    <div>
+                        <h4>Distributions for Different n</h4>
+                        <canvas id="convergence-dist-chart" width="400" height="300"></canvas>
+                        <p class="chart-note">Sₙ/√n distributions overlaid</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="interpretation">Security Interpretation</h2>
+
+            <h3>Bernoulli Model: Asymmetric Advantage</h3>
+            <p>When attackers have skill level p > 0.5, they systematically penetrate systems. Key insights:</p>
+            <ul>
+                <li><strong>Expected damage:</strong> With n systems and probability p, expect np successful penetrations</li>
+                <li><strong>Uncertainty:</strong> Standard deviation √(np(1−p)) means actual damage fluctuates around expectation</li>
+                <li><strong>Large networks:</strong> Percentage variation decreases as 1/√n, making aggregate outcomes more predictable</li>
+                <li><strong>Example:</strong> 10,000 systems with p=0.6 → expect 6,000 ± 49 penetrations (99.7% CI)</li>
+            </ul>
+
+            <h3>Rademacher Model: Balanced Contest</h3>
+            <p>Symmetric attack/defense dynamics with equal capabilities. Key insights:</p>
+            <ul>
+                <li><strong>Zero expectation:</strong> No systematic advantage, expected total score is 0</li>
+                <li><strong>Random walk:</strong> Cumulative score wanders unpredictably, typical magnitude √n</li>
+                <li><strong>Scaling:</strong> With 100 systems, typical |Sₙ| ≈ 10; with 10,000 systems, |Sₙ| ≈ 100</li>
+                <li><strong>Defense strategy:</strong> Even in balanced scenarios, large networks see substantial aggregate variation</li>
+            </ul>
+
+            <h3>Impact of System Size n and Attackers m</h3>
+            <p>While our model focuses on n steps (systems), we can interpret m attackers as affecting the parameters:</p>
+            <ul>
+                <li><strong>More attackers → higher p:</strong> In Bernoulli model, more attackers increase success probability</li>
+                <li><strong>Coordinated attacks:</strong> Could introduce correlation, breaking i.i.d. assumption</li>
+                <li><strong>Resource constraints:</strong> Fixed m attackers spread across growing n systems → decreasing p</li>
+                <li><strong>Detection threshold:</strong> Defenders might detect attacks when |Sₙ| exceeds √n significantly</li>
+            </ul>
+
+            <h3>Practical Implications</h3>
+            <ul>
+                <li><strong>Risk assessment:</strong> Use CLT to estimate probability of extreme aggregate penetration scores</li>
+                <li><strong>Capacity planning:</strong> LLN ensures that per-system metrics stabilize at scale</li>
+                <li><strong>Anomaly detection:</strong> Deviations from √n-scaled expectations may signal coordinated attacks</li>
+                <li><strong>Defense allocation:</strong> Focus resources on reducing p rather than just increasing n</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="conclusion">Conclusion</h2>
+            <p>This homework demonstrates fundamental limit theorems through a security-motivated lens:</p>
+            <ul>
+                <li><strong>Law of Large Numbers:</strong> Average penetration rate Sₙ/n converges to expected value, with variance decaying as 1/n</li>
+                <li><strong>Central Limit Theorem:</strong> Properly normalized scores Sₙ/√n converge to normal distributions, enabling probabilistic risk assessment</li>
+                <li><strong>Bernoulli vs Rademacher:</strong> Asymmetric vs symmetric dynamics lead to fundamentally different behaviors (drift vs random walk)</li>
+                <li><strong>Scaling behavior:</strong> As n grows, distributions tighten for Sₙ/n but stabilize for Sₙ/√n</li>
+            </ul>
+            <p>These simulations illustrate how randomness at the individual level (each system/attack) aggregates into predictable patterns at scale, a cornerstone principle in probability theory, statistics, and stochastic modeling.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational simulation. Monte Carlo methods for studying limit theorems.</p>
+        </div>
+    </footer>
+
+    <script src="homework4.js"></script>
+</body>
+</html>

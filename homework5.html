@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework 5: Welford's Algorithm and Sampling Statistics</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Homework 5: Welford's Algorithm and Sampling Statistics</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <p class="eyebrow">Homework 5 · Online Statistics & Sampling Theory</p>
+            <h1>Welford's Recurrence Formulas and Sampling Statistics</h1>
+            <p class="lead">Implementing Welford's efficient online algorithm for computing mean and variance. Analyzing sampling distributions across multiple hackers penetrating systems, demonstrating the Law of Large Numbers and Central Limit Theorem through empirical simulations.</p>
+        </div>
+
+        <section>
+            <h2 id="overview">Overview</h2>
+            <p>This homework consists of two exercises:</p>
+            <ul>
+                <li><strong>Exercise 1:</strong> Derive and implement Welford's recurrence formulas for computing mean, variance, and sum of squares in a single pass through the data (online algorithm).</li>
+                <li><strong>Exercise 2:</strong> Simulate <strong>m hackers</strong> each attempting to penetrate <strong>n systems</strong>, where each penetration receives a score from 0 to 10. Use Welford's algorithm to compute sampling statistics and analyze how they relate to theoretical population parameters.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="exercise1">Exercise 1: Welford's Recurrence Formulas</h2>
+
+            <div class="split">
+                <div>
+                    <h3>Derivation</h3>
+                    <p>Welford's algorithm computes the mean and variance incrementally, avoiding numerical instability and requiring only one pass through the data.</p>
+
+                    <h4>Mean Recurrence (Knuth's Formula)</h4>
+                    <p>Given data points x₁, x₂, ..., xₙ, the mean Mₖ after k observations:</p>
+                    <p><code>M₁ = x₁</code></p>
+                    <p><code>Mₖ = Mₖ₋₁ + (xₖ - Mₖ₋₁) / k</code></p>
+
+                    <h4>Sum of Squares Recurrence</h4>
+                    <p>The sum of squared deviations SSₖ = Σᵢ₌₁ᵏ (xᵢ - Mₖ)²:</p>
+                    <p><code>SS₁ = 0</code></p>
+                    <p><code>SSₖ = SSₖ₋₁ + (xₖ - Mₖ₋₁) × (xₖ - Mₖ)</code></p>
+
+                    <h4>Variance</h4>
+                    <p>Once SSₖ is computed, the variance is simply:</p>
+                    <p><code>Var = SSₖ / k</code></p>
+
+                    <h4>Key Properties</h4>
+                    <ul>
+                        <li><strong>Single pass:</strong> Only requires one iteration through the data</li>
+                        <li><strong>O(1) memory:</strong> Only stores running values (n, mean, SS)</li>
+                        <li><strong>Numerically stable:</strong> Avoids catastrophic cancellation</li>
+                        <li><strong>Online:</strong> Can update statistics as new data arrives</li>
+                    </ul>
+
+                    <h4>Core Implementation (3 lines)</h4>
+                    <pre><code>for each x in data:
+    mean = mean + (x - mean) / n
+    SS = SS + (x - mean_prev) × (x - mean)</code></pre>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Test Welford's Algorithm</h3>
+                    <p>Verify that Welford's algorithm produces the same results as the standard two-pass method.</p>
+                    <button id="welford-test-btn" type="button">Run Test</button>
+                    <p id="welford-msg" class="msg" role="status"></p>
+
+                    <div id="welford-results" style="display: none;">
+                        <h4>Test Results</h4>
+                        <p><strong>Test data:</strong> <output id="welford-test-data">–</output></p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Statistic</th>
+                                    <th>Welford</th>
+                                    <th>Standard</th>
+                                    <th>Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Mean</td>
+                                    <td><output id="welford-mean">–</output></td>
+                                    <td><output id="standard-mean">–</output></td>
+                                    <td><output id="mean-error">–</output></td>
+                                </tr>
+                                <tr>
+                                    <td>Variance</td>
+                                    <td><output id="welford-variance">–</output></td>
+                                    <td><output id="standard-variance">–</output></td>
+                                    <td><output id="var-error">–</output></td>
+                                </tr>
+                                <tr>
+                                    <td>Sum of Squares</td>
+                                    <td><output id="welford-ss">–</output></td>
+                                    <td><output id="standard-ss">–</output></td>
+                                    <td><output id="ss-error">–</output></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="exercise2">Exercise 2: Sampling Mean and Variance</h2>
+
+            <h3>Problem Setup</h3>
+            <p>Consider a scenario where:</p>
+            <ul>
+                <li><strong>m hackers</strong> each attempt to penetrate <strong>n systems</strong></li>
+                <li>Each penetration attempt receives a score from 0 to 10, drawn from a fixed probability distribution</li>
+                <li>The theoretical mean and variance of this distribution are <strong>μ</strong> and <strong>σ²</strong></li>
+                <li>Each hacker receives <strong>n scores</strong> (one per system), forming a trajectory</li>
+            </ul>
+
+            <h3>Analysis Procedure</h3>
+            <ol>
+                <li>For each hacker, use <strong>Welford's algorithm</strong> to compute the sampling mean and sampling variance of their n scores</li>
+                <li>Across the m hackers, compute the <strong>average of the sampling means</strong> and the <strong>average of the sampling variances</strong></li>
+                <li>Compare these averages with the theoretical values μ and σ²</li>
+                <li>Repeat the experiment for different values of n to observe how sample size affects variability</li>
+            </ol>
+
+            <h3>Theoretical Expectations</h3>
+
+            <h4>Law of Large Numbers</h4>
+            <p>The average of the sampling means should converge to the population mean:</p>
+            <p><code>E[X̄] = μ</code></p>
+            <p>The average of the sampling variances should converge to the population variance:</p>
+            <p><code>E[S²] ≈ σ²</code></p>
+
+            <h4>Central Limit Theorem</h4>
+            <p>The distribution of sampling means should be approximately normal with:</p>
+            <p><code>X̄ ~ N(μ, σ²/n)</code></p>
+            <p>The standard deviation of sampling means should decrease as:</p>
+            <p><code>SD(X̄) = σ/√n</code></p>
+
+            <h4>Implications for Inferential Statistics</h4>
+            <ul>
+                <li><strong>Unbiasedness:</strong> Sample statistics are good estimators of population parameters</li>
+                <li><strong>Consistency:</strong> Estimates improve as sample size increases</li>
+                <li><strong>Efficiency:</strong> Larger samples yield more precise estimates (lower variance)</li>
+                <li><strong>Normality:</strong> Sampling distributions approach normality, enabling hypothesis testing and confidence intervals</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="simulation">Single Simulation</h2>
+            <p>Run a single simulation with m hackers and n systems to observe the relationship between sampling statistics and population parameters.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Available Distributions</h3>
+
+                    <h4>Normal Distribution</h4>
+                    <p><strong>Parameters:</strong> μ = 5.0, σ = 1.5</p>
+                    <p><strong>Support:</strong> Clipped to [0, 10]</p>
+                    <p><strong>Properties:</strong> Symmetric, most common in practice</p>
+
+                    <h4>Uniform Distribution</h4>
+                    <p><strong>Parameters:</strong> a = 2.0, b = 8.0</p>
+                    <p><strong>Mean:</strong> μ = (a + b) / 2 = 5.0</p>
+                    <p><strong>Variance:</strong> σ² = (b - a)² / 12 = 3.0</p>
+                    <p><strong>Properties:</strong> Flat, all scores equally likely in range</p>
+
+                    <h4>Triangular Distribution</h4>
+                    <p><strong>Parameters:</strong> a = 0, b = 10, c = 5 (mode)</p>
+                    <p><strong>Mean:</strong> μ = (a + b + c) / 3 ≈ 5.0</p>
+                    <p><strong>Properties:</strong> Symmetric, peaked at mode, simple model</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Simulation Controls</h3>
+                    <label>Number of hackers (m)
+                        <input id="sampling-m" type="number" value="1000" min="10" max="10000" step="100">
+                    </label>
+                    <label>Number of systems per hacker (n)
+                        <input id="sampling-n" type="number" value="100" min="10" max="10000" step="10">
+                    </label>
+                    <label>Score distribution
+                        <select id="sampling-distribution">
+                            <option value="normal">Normal (μ=5, σ=1.5)</option>
+                            <option value="uniform">Uniform [2, 8]</option>
+                            <option value="triangular">Triangular (0, 10, 5)</option>
+                        </select>
+                    </label>
+                    <button id="sampling-run-btn" type="button">Run Simulation</button>
+                    <p id="sampling-msg" class="msg" role="status"></p>
+
+                    <div id="sampling-results" style="display: none;">
+                        <h4>Results</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Theoretical</th>
+                                    <th>Empirical</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Mean (μ)</td>
+                                    <td><output id="theoretical-mean">–</output></td>
+                                    <td><output id="avg-sampling-mean">–</output></td>
+                                </tr>
+                                <tr>
+                                    <td>Variance (σ²)</td>
+                                    <td><output id="theoretical-variance">–</output></td>
+                                    <td><output id="avg-sampling-variance">–</output></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Errors</h4>
+                        <div class="result-item">
+                            <strong>Mean error:</strong>
+                            <output id="mean-error-value">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Variance error:</strong>
+                            <output id="variance-error-value">–</output>
+                        </div>
+
+                        <h4>Variability of Sampling Statistics</h4>
+                        <div class="result-item">
+                            <strong>Std Dev of sampling means:</strong>
+                            <output id="std-sampling-means">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Std Dev of sampling variances:</strong>
+                            <output id="std-sampling-variances">–</output>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sampling-charts" style="display: none; margin-top: 2rem;">
+                <h3>Distribution Visualizations</h3>
+                <div class="chart-grid">
+                    <div>
+                        <h4>Sampling Means</h4>
+                        <canvas id="sampling-means-chart" width="500" height="350"></canvas>
+                        <p class="chart-note">Blue: empirical distribution | Red: theoretical N(μ, σ²/n)</p>
+                    </div>
+                    <div>
+                        <h4>Sampling Variances</h4>
+                        <canvas id="sampling-variances-chart" width="500" height="350"></canvas>
+                        <p class="chart-note">Distribution of sample variances across hackers</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="convergence">Convergence Study: Effect of Sample Size n</h2>
+            <p>Investigate how increasing the number of systems n affects the variability of sampling statistics.</p>
+
+            <div class="split">
+                <div>
+                    <h3>What to Observe</h3>
+
+                    <h4>Decreasing Variability</h4>
+                    <p>As n increases, the standard deviation of sampling means should decrease according to:</p>
+                    <p><code>SD(X̄) = σ/√n</code></p>
+                    <p>This means:</p>
+                    <ul>
+                        <li>Doubling n reduces variability by √2 ≈ 1.41</li>
+                        <li>10× more data reduces variability by √10 ≈ 3.16</li>
+                        <li>Larger samples produce more consistent estimates</li>
+                    </ul>
+
+                    <h4>Practical Implications</h4>
+                    <ul>
+                        <li><strong>Sample size matters:</strong> More systems tested → more reliable assessment of hacker skill</li>
+                        <li><strong>Diminishing returns:</strong> Variance decreases as 1/n, so doubling precision requires 4× more data</li>
+                        <li><strong>Trade-offs:</strong> Balance between estimation precision and cost/time of data collection</li>
+                        <li><strong>Confidence intervals:</strong> Larger n → narrower intervals → more precise inferences</li>
+                    </ul>
+
+                    <h4>Expected Plot Behavior</h4>
+                    <p>The convergence plot should show:</p>
+                    <ul>
+                        <li>Observed std dev of sampling means (blue points) decreasing with n</li>
+                        <li>Theoretical curve σ/√n (red dashed line) matching observations</li>
+                        <li>Log-log plot showing linear relationship (slope = -1/2)</li>
+                    </ul>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Convergence Study Controls</h3>
+                    <label>Number of hackers (m)
+                        <input id="convergence-m" type="number" value="1000" min="100" max="5000" step="100">
+                    </label>
+                    <label>n values (comma-separated)
+                        <input id="convergence-n-values" type="text" value="10,25,50,100,250,500,1000">
+                    </label>
+                    <label>Score distribution
+                        <select id="convergence-distribution">
+                            <option value="normal">Normal (μ=5, σ=1.5)</option>
+                            <option value="uniform">Uniform [2, 8]</option>
+                            <option value="triangular">Triangular (0, 10, 5)</option>
+                        </select>
+                    </label>
+                    <button id="convergence-run-btn" type="button">Run Convergence Study</button>
+                    <p id="convergence-msg" class="msg" role="status"></p>
+                </div>
+            </div>
+
+            <div id="convergence-charts" style="display: none; margin-top: 2rem;">
+                <h3>Convergence Visualization</h3>
+                <div class="chart-single">
+                    <canvas id="convergence-plot" width="800" height="450"></canvas>
+                    <p class="chart-note">Standard deviation of sampling means vs sample size n. Blue line: observed | Red dashed: theoretical σ/√n</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="conclusions">Conclusions</h2>
+
+            <h3>1. Law of Large Numbers</h3>
+            <ul>
+                <li>The average of sampling means converges to the population mean μ as the number of hackers increases</li>
+                <li>The average of sampling variances converges to the population variance σ²</li>
+                <li>This validates that sample statistics are <strong>unbiased estimators</strong> of population parameters</li>
+            </ul>
+
+            <h3>2. Central Limit Theorem</h3>
+            <ul>
+                <li>The distribution of sampling means is approximately normal, even when the underlying distribution is not</li>
+                <li>The variability of sampling means decreases as σ/√n with increasing sample size</li>
+                <li>This enables <strong>inferential statistics</strong>: we can construct confidence intervals and perform hypothesis tests</li>
+            </ul>
+
+            <h3>3. Effect of Sample Size</h3>
+            <ul>
+                <li>Larger samples (n) → more consistent estimates → lower variance of sampling statistics</li>
+                <li>The relationship SD(X̄) = σ/√n shows diminishing returns: quadrupling sample size only halves the standard error</li>
+                <li>In the hacker scenario: testing more systems gives better estimates of each hacker's skill level</li>
+            </ul>
+
+            <h3>4. Practical Significance</h3>
+            <ul>
+                <li><strong>Reliability:</strong> Sample-based estimates are trustworthy when sample sizes are adequate</li>
+                <li><strong>Precision:</strong> We can quantify estimation uncertainty using σ/√n</li>
+                <li><strong>Efficiency:</strong> Welford's algorithm computes statistics in a single pass with O(1) memory</li>
+                <li><strong>Decision-making:</strong> Understanding sampling variability helps set appropriate sample sizes for desired precision</li>
+            </ul>
+
+            <h3>5. Why These Results Matter in Inferential Statistics</h3>
+            <p>These simulations demonstrate the foundational principles that justify inferential statistics:</p>
+            <ul>
+                <li>We can use sample data to make reliable inferences about populations</li>
+                <li>We can quantify the uncertainty in our estimates</li>
+                <li>We can determine how much data we need for desired precision</li>
+                <li>The normal distribution emerges naturally from aggregating random variables, enabling standard statistical tests</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="interpretation">Cybersecurity Interpretation</h2>
+
+            <h3>Hacker Skill Assessment</h3>
+            <p>In this model, each hacker's sampling mean represents their <strong>estimated skill level</strong> based on n penetration attempts. Key insights:</p>
+            <ul>
+                <li><strong>Individual assessment:</strong> Each hacker's mean score estimates their true skill μ</li>
+                <li><strong>Confidence in assessment:</strong> With n systems tested, the standard error is σ/√n</li>
+                <li><strong>Example:</strong> If σ = 1.5 and n = 100, then SE = 1.5/10 = 0.15, meaning skill estimates are typically within ±0.3 of true skill (95% CI)</li>
+                <li><strong>Ranking hackers:</strong> Larger n makes rankings more reliable by reducing noise in estimates</li>
+            </ul>
+
+            <h3>System Vulnerability Assessment</h3>
+            <p>Alternatively, if we fix the attacker and vary systems, the scores reflect <strong>system vulnerabilities</strong>:</p>
+            <ul>
+                <li>Each system receives a vulnerability score from 0 to 10</li>
+                <li>The sampling mean estimates the average vulnerability across n systems</li>
+                <li>The sampling variance indicates heterogeneity of vulnerabilities</li>
+                <li>Testing more systems (larger n) gives more precise estimates of average vulnerability</li>
+            </ul>
+
+            <h3>Resource Allocation</h3>
+            <p>Understanding the σ/√n relationship informs security testing strategies:</p>
+            <ul>
+                <li><strong>Budget constraints:</strong> If testing is expensive, choose n to balance cost and precision</li>
+                <li><strong>Risk tolerance:</strong> Critical systems may require larger n for tighter confidence intervals</li>
+                <li><strong>Adaptive testing:</strong> Start with small n, expand if initial variance is too high</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational simulation. Demonstrating Welford's algorithm and sampling theory.</p>
+        </div>
+    </footer>
+
+    <script src="homework5.js"></script>
+</body>
+</html>

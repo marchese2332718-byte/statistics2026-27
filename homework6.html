@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework 6: Riemann and Lebesgue Integration & Normal CDF</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Homework 6: Riemann and Lebesgue Integration & Normal CDF</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <p class="eyebrow">Homework 6 · Numerical Integration & Special Functions</p>
+            <h1>Riemann and Lebesgue Integration & Normal CDF Computation</h1>
+            <p class="lead">Comparing Riemann and Lebesgue integration approaches numerically for various functions. Implementing efficient methods for computing the normal CDF and understanding why elementary functions are insufficient.</p>
+        </div>
+
+        <section>
+            <h2 id="overview">Overview</h2>
+            <p>This homework consists of two exercises:</p>
+            <ul>
+                <li><strong>Exercise 1:</strong> Numerically approximate integrals using both Riemann definition (domain partitioning) and Lebesgue definition (range partitioning), comparing accuracy, convergence, and efficiency.</li>
+                <li><strong>Exercise 2:</strong> Develop an efficient numerical method to compute the standard normal CDF, exploring the relationship with the error function and understanding Liouville's theorem.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="exercise1">Exercise 1: Riemann and Lebesgue Integration</h2>
+
+            <div class="split">
+                <div>
+                    <h3>Theoretical Background</h3>
+
+                    <h4>Riemann Integration</h4>
+                    <p>The Riemann integral partitions the <strong>domain</strong> [a, b] into n subintervals:</p>
+                    <p><code>∫ₐᵇ f(x) dx ≈ Σᵢ f(xᵢ) Δx</code></p>
+                    <p>where Δx = (b - a) / n and xᵢ are sample points in each subinterval.</p>
+
+                    <h4>Lebesgue Integration</h4>
+                    <p>The Lebesgue integral partitions the <strong>range</strong> of f into levels yⱼ and measures the preimage:</p>
+                    <p><code>∫ₐᵇ f(x) dx ≈ Σⱼ yⱼ · μ({x : yⱼ ≤ f(x) < yⱼ₊₁})</code></p>
+                    <p>where μ denotes the measure (length) of the set of x-values where f takes values in [yⱼ, yⱼ₊₁).</p>
+
+                    <h4>Key Differences</h4>
+                    <ul>
+                        <li><strong>Riemann:</strong> Partitions domain uniformly, samples function values</li>
+                        <li><strong>Lebesgue:</strong> Partitions range, measures preimages (inverse images)</li>
+                        <li><strong>For Riemann-integrable functions:</strong> Both approaches converge to the same value</li>
+                        <li><strong>For pathological functions:</strong> Lebesgue may integrate functions Riemann cannot</li>
+                    </ul>
+
+                    <h4>Numerical Implementation</h4>
+                    <p><strong>Riemann approach:</strong> Direct evaluation at grid points</p>
+                    <p><strong>Lebesgue approach:</strong> For each range level, find measure of preimage by scanning domain and counting/measuring where function falls in that range</p>
+
+                    <h3>Test Functions</h3>
+
+                    <h4>Smooth Functions</h4>
+                    <ul>
+                        <li><strong>f(x) = sin(x)</strong> on [0, π]: Exact = 2</li>
+                        <li><strong>f(x) = x²</strong> on [0, 1]: Exact = 1/3</li>
+                        <li><strong>f(x) = sin(x)/x</strong> on [0, π]: Exact ≈ 1.3179 (Si(π))</li>
+                    </ul>
+
+                    <h4>Discontinuous Functions</h4>
+                    <ul>
+                        <li><strong>Step function:</strong> f(x) = 1 if x < 0.5, 3 if x ≥ 0.5 on [0, 1]: Exact = 2</li>
+                        <li><strong>Indicator function:</strong> f(x) = 1 if x < 0.5, 0 if x ≥ 0.5 on [0, 1]: Exact = 0.5</li>
+                    </ul>
+
+                    <h4>Functions with Singularities</h4>
+                    <ul>
+                        <li><strong>f(x) = 1/√x</strong> on (0, 1]: Exact = 2 (improper integral)</li>
+                        <li><strong>f(x) = |x - 0.5|</strong> on [0, 1]: Exact = 0.25</li>
+                    </ul>
+
+                    <h4>Pathological Functions</h4>
+                    <ul>
+                        <li><strong>Dirichlet function:</strong> f(x) = 1 if x rational, 0 if irrational on [0, 1]</li>
+                        <li><strong>Thomae's function:</strong> f(x) = 1/q if x = p/q in lowest terms, 0 if irrational on [0, 1]</li>
+                    </ul>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Numerical Integration</h3>
+                    <label>Function
+                        <select id="int-function">
+                            <option value="sin">sin(x) on [0, π]</option>
+                            <option value="x2">x² on [0, 1]</option>
+                            <option value="sinc">sin(x)/x on [0, π]</option>
+                            <option value="step">Step function on [0, 1]</option>
+                            <option value="indicator">Indicator on [0, 1]</option>
+                            <option value="abs">|x - 0.5| on [0, 1]</option>
+                            <option value="invsqrt">1/√x on (0, 1]</option>
+                            <option value="dirichlet">Dirichlet on [0, 1]</option>
+                            <option value="thomae">Thomae's on [0, 1]</option>
+                        </select>
+                    </label>
+                    <label>Number of partitions (n)
+                        <input id="int-n" type="number" value="1000" min="10" max="100000" step="10">
+                    </label>
+                    <button id="int-compute-btn" type="button">Compute Integrals</button>
+                    <p id="int-msg" class="msg" role="status"></p>
+
+                    <div id="int-results" style="display: none;">
+                        <h4>Results</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>Value</th>
+                                    <th>Error</th>
+                                    <th>Time (ms)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Exact</td>
+                                    <td><output id="int-exact">–</output></td>
+                                    <td>–</td>
+                                    <td>–</td>
+                                </tr>
+                                <tr>
+                                    <td>Riemann (midpoint)</td>
+                                    <td><output id="int-riemann">–</output></td>
+                                    <td><output id="int-riemann-err">–</output></td>
+                                    <td><output id="int-riemann-time">–</output></td>
+                                </tr>
+                                <tr>
+                                    <td>Lebesgue</td>
+                                    <td><output id="int-lebesgue">–</output></td>
+                                    <td><output id="int-lebesgue-err">–</output></td>
+                                    <td><output id="int-lebesgue-time">–</output></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Analysis</h4>
+                        <div class="result-item">
+                            <strong>Relative accuracy:</strong>
+                            <output id="int-accuracy">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Performance ratio (Riemann/Lebesgue):</strong>
+                            <output id="int-performance">–</output>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="int-charts" style="display: none; margin-top: 2rem;">
+                <h3>Convergence Analysis</h3>
+                <div class="chart-grid">
+                    <div>
+                        <h4>Error vs Number of Partitions</h4>
+                        <canvas id="convergence-chart" width="500" height="350"></canvas>
+                        <p class="chart-note">Log-log plot showing convergence rate for both methods</p>
+                    </div>
+                    <div>
+                        <h4>Function Visualization</h4>
+                        <canvas id="function-chart" width="500" height="350"></canvas>
+                        <p class="chart-note">Function plot with partition visualization</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="convergence-study">Convergence Study</h2>
+            <p>Investigate how both methods converge as the number of partitions increases.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Expected Behavior</h3>
+
+                    <h4>Smooth Functions</h4>
+                    <ul>
+                        <li><strong>Riemann:</strong> O(1/n²) convergence rate for smooth functions (midpoint rule)</li>
+                        <li><strong>Lebesgue:</strong> Similar convergence, but may be slower due to preimage computation overhead</li>
+                        <li><strong>Both methods:</strong> Converge to the same value</li>
+                    </ul>
+
+                    <h4>Discontinuous Functions</h4>
+                    <ul>
+                        <li><strong>Step functions:</strong> Riemann converges quickly despite discontinuity</li>
+                        <li><strong>Lebesgue:</strong> May handle discontinuities more naturally by grouping similar values</li>
+                        <li><strong>Convergence rate:</strong> O(1/n) at discontinuity points</li>
+                    </ul>
+
+                    <h4>Pathological Functions</h4>
+                    <ul>
+                        <li><strong>Dirichlet function:</strong> Not Riemann-integrable, but Lebesgue-integrable (integral = 0)</li>
+                        <li><strong>Thomae's function:</strong> Riemann-integrable (integral = 0) but numerical methods struggle</li>
+                        <li><strong>Dense discontinuities:</strong> Numerical approximations may fail to capture true behavior</li>
+                    </ul>
+
+                    <h4>Computational Efficiency</h4>
+                    <ul>
+                        <li><strong>Riemann:</strong> O(n) complexity, very fast</li>
+                        <li><strong>Lebesgue:</strong> O(n × m) where m is range partitions, slower but more general</li>
+                        <li><strong>Adaptive methods:</strong> Can improve both approaches by refining partitions where needed</li>
+                    </ul>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Convergence Analysis</h3>
+                    <label>Function
+                        <select id="conv-function">
+                            <option value="sin">sin(x) on [0, π]</option>
+                            <option value="x2">x² on [0, 1]</option>
+                            <option value="step">Step function on [0, 1]</option>
+                            <option value="abs">|x - 0.5| on [0, 1]</option>
+                        </select>
+                    </label>
+                    <label>Partition sizes (comma-separated)
+                        <input id="conv-n-values" type="text" value="10,25,50,100,250,500,1000,2500,5000">
+                    </label>
+                    <button id="conv-run-btn" type="button">Run Convergence Study</button>
+                    <p id="conv-msg" class="msg" role="status"></p>
+                </div>
+            </div>
+
+            <div id="conv-charts" style="display: none; margin-top: 2rem;">
+                <h3>Convergence Visualization</h3>
+                <div class="chart-single">
+                    <canvas id="conv-plot" width="800" height="450"></canvas>
+                    <p class="chart-note">Error vs n for both methods. Log-log scale to observe convergence rates.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="exercise2">Exercise 2: Normal CDF Computation</h2>
+
+            <div class="split">
+                <div>
+                    <h3>Mathematical Background</h3>
+
+                    <h4>Standard Normal CDF</h4>
+                    <p>The cumulative distribution function of the standard normal distribution N(0,1) is:</p>
+                    <p><code>Φ(x) = (1/√(2π)) ∫₋∞ˣ exp(-t²/2) dt</code></p>
+
+                    <h4>Why No Elementary Form?</h4>
+                    <p><strong>Liouville's theorem</strong> (1835) states that the antiderivative of exp(-t²) cannot be expressed in terms of elementary functions (polynomials, exponentials, logarithms, trigonometric functions, and their compositions).</p>
+                    <p>Intuitively: elementary functions have "simple" antiderivatives, but exp(-t²) requires fundamentally new functions.</p>
+
+                    <h4>The Error Function</h4>
+                    <p>The error function is defined as:</p>
+                    <p><code>erf(x) = (2/√π) ∫₀ˣ exp(-t²) dt</code></p>
+                    <p>This is a <strong>special function</strong> - not elementary, but well-studied and tabulated.</p>
+
+                    <h4>Relationship to Normal CDF</h4>
+                    <p>The normal CDF can be expressed exactly using erf:</p>
+                    <p><code>Φ(x) = (1/2)[1 + erf(x/√2)]</code></p>
+                    <p>This is an <strong>exact analytical representation</strong>, but erf itself must be computed numerically.</p>
+
+                    <h4>Why Numerical Methods Are Still Needed</h4>
+                    <ul>
+                        <li>The error function is defined via an integral, which must be computed numerically</li>
+                        <li>No finite formula exists in terms of elementary operations</li>
+                        <li>We must use approximations: numerical integration, series expansions, or rational approximations</li>
+                    </ul>
+
+                    <h3>Numerical Approaches</h3>
+
+                    <h4>1. Numerical Integration (Trapezoidal/Simpson)</h4>
+                    <p>Directly integrate (1/√(2π)) exp(-t²/2) from -∞ to x using quadrature rules.</p>
+                    <ul>
+                        <li><strong>Trapezoidal rule:</strong> Simple, O(1/n²) convergence</li>
+                        <li><strong>Simpson's rule:</strong> More accurate, O(1/n⁴) convergence</li>
+                        <li><strong>Adaptive quadrature:</strong> Refine where integrand changes rapidly</li>
+                    </ul>
+
+                    <h4>2. Series Expansion of erf</h4>
+                    <p>Taylor series for erf around x = 0:</p>
+                    <p><code>erf(x) = (2/√π) Σ_{n=0}^∞ (-1)ⁿ x^(2n+1) / (n! (2n+1))</code></p>
+                    <ul>
+                        <li>Works well for |x| < 1</li>
+                        <li>Fast convergence near origin</li>
+                        <li>Requires many terms for large |x|</li>
+                    </ul>
+
+                    <h4>3. Asymptotic Expansion (large x)</h4>
+                    <p>For large |x|, use continued fraction or asymptotic series:</p>
+                    <p><code>1 - Φ(x) ≈ φ(x)/x [1 - 1/x² + 3/x⁴ - ...]</code></p>
+                    <ul>
+                        <li>Efficient for |x| > 3</li>
+                        <li>Complements series expansion</li>
+                    </ul>
+
+                    <h4>4. Rational Approximations</h4>
+                    <p>Use polynomial ratios fitted to minimize error (e.g., Abramowitz & Stegun approximations).</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Compute Normal CDF</h3>
+                    <label>x value
+                        <input id="cdf-x" type="number" value="0" min="-5" max="5" step="0.1">
+                    </label>
+                    <label>Method
+                        <select id="cdf-method">
+                            <option value="simpson">Simpson's Rule</option>
+                            <option value="trapezoidal">Trapezoidal Rule</option>
+                            <option value="series">Taylor Series (erf)</option>
+                            <option value="rational">Rational Approximation</option>
+                        </select>
+                    </label>
+                    <label>Precision parameter (n or terms)
+                        <input id="cdf-n" type="number" value="100" min="10" max="10000" step="10">
+                    </label>
+                    <button id="cdf-compute-btn" type="button">Compute Φ(x)</button>
+                    <p id="cdf-msg" class="msg" role="status"></p>
+
+                    <div id="cdf-results" style="display: none;">
+                        <h4>Results</h4>
+                        <div class="result-item">
+                            <strong>Computed Φ(x):</strong>
+                            <output id="cdf-computed">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Reference value:</strong>
+                            <output id="cdf-reference">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Absolute error:</strong>
+                            <output id="cdf-error">–</output>
+                        </div>
+                        <div class="result-item">
+                            <strong>Computation time:</strong>
+                            <output id="cdf-time">–</output> ms
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="cdf-comparison">CDF Methods Comparison</h2>
+            <p>Compare different numerical methods for computing Φ(x) across a range of x values.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Evaluation Criteria</h3>
+
+                    <h4>Accuracy</h4>
+                    <ul>
+                        <li>Compare with trusted reference (JavaScript Math.erf or high-precision calculation)</li>
+                        <li>Measure absolute and relative errors</li>
+                        <li>Assess accuracy across different x ranges</li>
+                    </ul>
+
+                    <h4>Efficiency</h4>
+                    <ul>
+                        <li>Computation time for single evaluation</li>
+                        <li>Scalability with precision parameter</li>
+                        <li>Trade-off between accuracy and speed</li>
+                    </ul>
+
+                    <h4>Range of Validity</h4>
+                    <ul>
+                        <li><strong>Series expansion:</strong> Best for |x| < 2</li>
+                        <li><strong>Numerical integration:</strong> Works everywhere but slower</li>
+                        <li><strong>Rational approximation:</strong> Fast and accurate across all x</li>
+                        <li><strong>Asymptotic expansion:</strong> Best for |x| > 3</li>
+                    </ul>
+
+                    <h4>Implementation Complexity</h4>
+                    <ul>
+                        <li>Simple quadrature rules are easy to implement</li>
+                        <li>Series require careful handling of convergence</li>
+                        <li>Rational approximations require coefficient fitting</li>
+                    </ul>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Method Comparison</h3>
+                    <label>x range
+                        <input id="cdf-comp-range" type="text" value="-3,-2,-1,0,1,2,3">
+                    </label>
+                    <label>Precision (n)
+                        <input id="cdf-comp-n" type="number" value="100" min="10" max="1000" step="10">
+                    </label>
+                    <button id="cdf-comp-btn" type="button">Compare Methods</button>
+                    <p id="cdf-comp-msg" class="msg" role="status"></p>
+                </div>
+            </div>
+
+            <div id="cdf-comp-charts" style="display: none; margin-top: 2rem;">
+                <h3>Comparison Results</h3>
+                <div class="chart-grid">
+                    <div>
+                        <h4>Accuracy Comparison</h4>
+                        <canvas id="cdf-accuracy-chart" width="500" height="350"></canvas>
+                        <p class="chart-note">Absolute error for each method across x values</p>
+                    </div>
+                    <div>
+                        <h4>Efficiency Comparison</h4>
+                        <canvas id="cdf-efficiency-chart" width="500" height="350"></canvas>
+                        <p class="chart-note">Computation time (ms) vs accuracy trade-off</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="liouville">Understanding Liouville's Theorem</h2>
+
+            <h3>What Are Elementary Functions?</h3>
+            <p>Elementary functions are built from:</p>
+            <ul>
+                <li>Constants and the variable x</li>
+                <li>Arithmetic operations: +, −, ×, ÷</li>
+                <li>Exponentials and logarithms: exp(x), ln(x)</li>
+                <li>Trigonometric functions: sin(x), cos(x), tan(x), etc.</li>
+                <li>Inverse trigonometric functions: arcsin(x), arctan(x), etc.</li>
+                <li>Finite compositions and combinations of the above</li>
+            </ul>
+
+            <h3>What Liouville's Theorem Says</h3>
+            <p>Liouville's theorem (differential algebra, 1835) provides a criterion for when an integral has an elementary antiderivative. For many functions, including exp(-x²), the theorem proves no elementary antiderivative exists.</p>
+            <p><strong>Consequence:</strong> We cannot write ∫ exp(-x²) dx using any combination of elementary functions. This is a fundamental mathematical limitation, not a lack of cleverness.</p>
+
+            <h3>Why This Matters for the Normal CDF</h3>
+            <ul>
+                <li>The standard normal PDF is φ(x) = (1/√(2π)) exp(-x²/2)</li>
+                <li>The CDF is Φ(x) = ∫₋∞ˣ φ(t) dt = ∫₋∞ˣ exp(-t²/2) dt</li>
+                <li>By Liouville's theorem, Φ(x) cannot be expressed using elementary functions</li>
+                <li>We must introduce a <strong>special function</strong> (erf) to represent it analytically</li>
+                <li>Even with erf, we need numerical methods for practical computation</li>
+            </ul>
+
+            <h3>Special Functions as Extensions</h3>
+            <p>Special functions like erf, Bessel functions, gamma function, etc., extend the class of functions we can work with. They are:</p>
+            <ul>
+                <li>Defined precisely (usually via integrals or differential equations)</li>
+                <li>Well-studied with known properties</li>
+                <li>Tabulated and implemented in numerical libraries</li>
+                <li>Essential for solving real-world problems in statistics, physics, engineering</li>
+            </ul>
+
+            <h3>Why Numerical Methods Are Necessary</h3>
+            <p>Even though Φ(x) = ½[1 + erf(x/√2)] is an exact formula:</p>
+            <ul>
+                <li>erf is defined as an integral: erf(x) = (2/√π) ∫₀ˣ exp(-t²) dt</li>
+                <li>We cannot evaluate this integral symbolically</li>
+                <li>For any practical computation, we must approximate the integral numerically</li>
+                <li>Series expansions, quadrature rules, and rational approximations are all numerical methods</li>
+                <li>The "exact" representation using erf is conceptual; computation is always approximate</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="conclusions">Conclusions</h2>
+
+            <h3>Exercise 1: Riemann vs Lebesgue Integration</h3>
+            <ul>
+                <li><strong>Convergence:</strong> For Riemann-integrable functions, both methods converge to the same value</li>
+                <li><strong>Efficiency:</strong> Riemann approach is typically faster (O(n) vs O(n×m)), better suited for smooth functions</li>
+                <li><strong>Discontinuities:</strong> Lebesgue approach may handle pathological cases more gracefully by grouping similar function values</li>
+                <li><strong>Pathological functions:</strong> Dirichlet function is Lebesgue-integrable but not Riemann-integrable, though numerical approximations struggle with both</li>
+                <li><strong>Practical use:</strong> Riemann-style methods dominate in numerical analysis due to efficiency; Lebesgue theory is essential for mathematical foundations</li>
+            </ul>
+
+            <h3>Exercise 2: Normal CDF Computation</h3>
+            <ul>
+                <li><strong>Elementary functions insufficient:</strong> Liouville's theorem proves ∫ exp(-x²) dx has no elementary antiderivative</li>
+                <li><strong>Special functions needed:</strong> Error function erf provides exact analytical representation but must be computed numerically</li>
+                <li><strong>Multiple approaches:</strong> Numerical integration (Simpson/trapezoidal), series expansion, rational approximations all work</li>
+                <li><strong>Trade-offs:</strong> Series fast for small |x|, asymptotic for large |x|, rational approximations balance accuracy/speed</li>
+                <li><strong>Practical implementation:</strong> Modern libraries use piecewise methods (different approaches for different x ranges)</li>
+            </ul>
+
+            <h3>Broader Implications</h3>
+            <ul>
+                <li>Many real-world problems require numerical methods because exact solutions don't exist</li>
+                <li>Understanding convergence rates helps choose appropriate precision/performance trade-offs</li>
+                <li>Special functions extend our mathematical toolkit beyond elementary functions</li>
+                <li>Numerical analysis bridges the gap between mathematical theory and practical computation</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="interpretation">Statistical Interpretation</h2>
+
+            <h3>Integration in Statistics</h3>
+            <p>Integration is fundamental to probability and statistics:</p>
+            <ul>
+                <li><strong>Probability:</strong> P(a < X < b) = ∫ₐᵇ f(x) dx where f is the PDF</li>
+                <li><strong>Expectation:</strong> E[X] = ∫ x f(x) dx</li>
+                <li><strong>Variance:</strong> Var(X) = ∫ (x - μ)² f(x) dx</li>
+                <li><strong>Numerical methods:</strong> Essential when analytical solutions unavailable</li>
+            </ul>
+
+            <h3>The Normal Distribution's Ubiquity</h3>
+            <p>The normal CDF appears everywhere in statistics:</p>
+            <ul>
+                <li><strong>Hypothesis testing:</strong> Z-tests, t-tests (approximate normal for large n)</li>
+                <li><strong>Confidence intervals:</strong> Constructed using normal quantiles</li>
+                <li><strong>Central Limit Theorem:</strong> Sample means approach normal distribution</li>
+                <li><strong>Error analysis:</strong> Measurement errors often assumed normal</li>
+            </ul>
+
+            <h3>Why Efficient CDF Computation Matters</h3>
+            <p>In cybersecurity and data analysis:</p>
+            <ul>
+                <li><strong>Anomaly detection:</strong> Compute p-values to identify outliers (requires Φ evaluation)</li>
+                <li><strong>Risk assessment:</strong> Quantify probability of extreme events (tail probabilities)</li>
+                <li><strong>Monte Carlo simulations:</strong> Generate normal random variables (inverse CDF method)</li>
+                <li><strong>Performance:</strong> Statistical software evaluates Φ millions of times; efficiency critical</li>
+            </ul>
+
+            <h3>Practical Example: Anomaly Detection</h3>
+            <p>Suppose network traffic volumes are normally distributed with μ = 1000 GB, σ = 150 GB:</p>
+            <ul>
+                <li>Observed traffic: 1500 GB</li>
+                <li>Standardize: z = (1500 - 1000) / 150 ≈ 3.33</li>
+                <li>Compute p-value: P(X > 1500) = 1 - Φ(3.33) ≈ 0.0004</li>
+                <li>Conclusion: This is a 1-in-2500 event, likely anomalous</li>
+                <li>Fast, accurate Φ computation enables real-time detection</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational simulation. Exploring numerical integration and special functions.</p>
+        </div>
+    </footer>
+
+    <script src="homework6.js"></script>
+</body>
+</html>

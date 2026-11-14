@@ -1,0 +1,36 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Online Algorithms for Statistical Computation}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Introduction}{3}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Welford's Online Algorithm for Mean and Variance}{3}{subsection.1.2}%
+\contentsline {subsubsection}{\numberline {1.2.1}Mathematical Foundation}{3}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\numberline {1.2.2}The Recurrence Relations}{3}{subsubsection.1.2.2}%
+\contentsline {subsubsection}{\numberline {1.2.3}Numerical Stability}{4}{subsubsection.1.2.3}%
+\contentsline {subsection}{\numberline {1.3}Online Quantile Estimation}{4}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Applications to Cybersecurity}{4}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Law of Large Numbers and Central Limit Theorem}{4}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Probability Space Foundation}{4}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Law of Large Numbers}{4}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Weak Law of Large Numbers (WLLN)}{5}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Strong Law of Large Numbers (SLLN)}{5}{subsubsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.3}Central Limit Theorem}{5}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Practical Implications}{5}{subsubsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.4}Computational Verification}{6}{subsection.2.4}%
+\contentsline {section}{\numberline {3}Measure Theory and Probability Formalization}{6}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Motivation}{6}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Measure Theory Foundations}{6}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Lebesgue-Stieltjes Integration}{7}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Construction}{7}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Lebesgue-Stieltjes Integration}{7}{subsubsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.4}Applications to Probability}{7}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Generation of Random Variables}{7}{section.4}%
+\contentsline {subsection}{\numberline {4.1}The Inverse Transform Method}{7}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Examples}{8}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}Exponential Distribution}{8}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2}Normal Distribution (Box-Muller)}{8}{subsubsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.3}Rejection Sampling}{8}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Applications to Cybersecurity}{8}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Anomaly Detection via Statistical Thresholds}{8}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Monte Carlo Simulation for Risk Assessment}{9}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Randomness in Cryptography}{9}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Statistical Independence Testing}{9}{subsection.5.4}%
+\contentsline {section}{\numberline {6}Conclusions}{10}{section.6}%

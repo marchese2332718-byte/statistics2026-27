@@ -1,0 +1,392 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian,english]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\geometry{margin=1in}
+
+\title{\textbf{Advanced Topics in Statistics and Probability Theory}\\
+\large{Applications to Cybersecurity and Computational Methods}}
+\author{Sapienza University of Rome\\Master's Degree in Cybersecurity}
+\date{Academic Year 2026/27}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This thesis explores fundamental concepts in statistics and probability theory, with a focus on theoretical foundations and practical applications in cybersecurity. We examine online algorithms for statistical computation, the Law of Large Numbers (LLN) and Central Limit Theorem (CLT) from both theoretical and practical perspectives, the formalization of probability through measure theory, methods for generating random variables, and statistical applications to cybersecurity problems. Each topic is presented with rigorous mathematical treatment alongside computational implementations.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Online Algorithms for Statistical Computation}
+
+\subsection{Introduction}
+Online algorithms process data sequentially, updating statistics as new observations arrive without requiring storage of the entire dataset. These algorithms are crucial for streaming data analysis, big data applications, and real-time monitoring systems.
+
+\subsection{Welford's Online Algorithm for Mean and Variance}
+
+Traditional computation of sample variance requires two passes through the data: one to compute the mean, another to compute squared deviations. Welford's algorithm (1962) computes both mean and variance in a single pass using constant memory.
+
+\subsubsection{Mathematical Foundation}
+For a sequence of observations $x_1, x_2, \ldots, x_n$, the sample mean is:
+\begin{equation}
+\bar{x}_n = \frac{1}{n}\sum_{i=1}^n x_i
+\end{equation}
+
+The sample variance is:
+\begin{equation}
+s_n^2 = \frac{1}{n-1}\sum_{i=1}^n (x_i - \bar{x}_n)^2
+\end{equation}
+
+\subsubsection{The Recurrence Relations}
+Welford discovered the following recurrence relations:
+\begin{align}
+\bar{x}_n &= \bar{x}_{n-1} + \frac{x_n - \bar{x}_{n-1}}{n} \\
+M_n &= M_{n-1} + (x_n - \bar{x}_{n-1})(x_n - \bar{x}_n) \\
+s_n^2 &= \frac{M_n}{n-1}
+\end{align}
+
+where $M_n = \sum_{i=1}^n (x_i - \bar{x}_n)^2$ is the sum of squared deviations.
+
+\begin{proof}
+Starting from the definition:
+\begin{align*}
+\bar{x}_n &= \frac{1}{n}\sum_{i=1}^n x_i = \frac{1}{n}\left[(n-1)\bar{x}_{n-1} + x_n\right] \\
+&= \frac{n-1}{n}\bar{x}_{n-1} + \frac{x_n}{n} \\
+&= \bar{x}_{n-1} + \frac{x_n - \bar{x}_{n-1}}{n}
+\end{align*}
+
+For the variance update, we use the identity:
+\begin{align*}
+M_n &= \sum_{i=1}^n (x_i - \bar{x}_n)^2 \\
+&= \sum_{i=1}^{n-1} (x_i - \bar{x}_n)^2 + (x_n - \bar{x}_n)^2
+\end{align*}
+
+Through algebraic manipulation (using the relation between $\bar{x}_n$ and $\bar{x}_{n-1}$), this reduces to the stated recurrence.
+\end{proof}
+
+\subsubsection{Numerical Stability}
+Welford's algorithm is numerically stable because it avoids catastrophic cancellation that occurs in the two-pass formula $\sum x_i^2 - n\bar{x}^2$.
+
+\subsection{Online Quantile Estimation}
+
+Exact quantile computation requires sorting, which is not feasible for streaming data. P-square algorithm (Jain \& Chlamtac, 1985) maintains estimates of quantiles using only five markers.
+
+\subsection{Applications to Cybersecurity}
+\begin{itemize}
+\item \textbf{Network traffic monitoring}: Computing real-time statistics on packet sizes, connection durations
+\item \textbf{Anomaly detection}: Maintaining running mean and variance to detect outliers
+\item \textbf{Performance monitoring}: Tracking system metrics without storing complete histories
+\end{itemize}
+
+\section{Law of Large Numbers and Central Limit Theorem}
+
+\subsection{Probability Space Foundation}
+
+\begin{definition}[Probability Space]
+A probability space is a triple $(\Omega, \mathcal{F}, P)$ where:
+\begin{itemize}
+\item $\Omega$ is the sample space (set of all possible outcomes)
+\item $\mathcal{F}$ is a $\sigma$-algebra on $\Omega$ (collection of events)
+\item $P: \mathcal{F} \to [0,1]$ is a probability measure satisfying:
+\begin{enumerate}
+\item $P(\Omega) = 1$
+\item For disjoint events $A_1, A_2, \ldots$: $P(\bigcup_{i=1}^\infty A_i) = \sum_{i=1}^\infty P(A_i)$
+\end{enumerate}
+\end{itemize}
+\end{definition}
+
+\subsection{Law of Large Numbers}
+
+The Law of Large Numbers describes the convergence of sample averages to the expected value. Two versions exist: weak (convergence in probability) and strong (almost sure convergence).
+
+\subsubsection{Weak Law of Large Numbers (WLLN)}
+
+\begin{theorem}[Weak Law of Large Numbers]
+Let $X_1, X_2, \ldots$ be independent and identically distributed (i.i.d.) random variables with $E[X_i] = \mu$ and $\text{Var}(X_i) = \sigma^2 < \infty$. Let $\bar{X}_n = \frac{1}{n}\sum_{i=1}^n X_i$. Then for any $\epsilon > 0$:
+\begin{equation}
+\lim_{n\to\infty} P(|\bar{X}_n - \mu| > \epsilon) = 0
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+We use Chebyshev's inequality: $P(|Y - E[Y]| \geq k) \leq \frac{\text{Var}(Y)}{k^2}$.
+
+Since $E[\bar{X}_n] = \mu$ and $\text{Var}(\bar{X}_n) = \frac{\sigma^2}{n}$ (by independence):
+\begin{align*}
+P(|\bar{X}_n - \mu| \geq \epsilon) &\leq \frac{\text{Var}(\bar{X}_n)}{\epsilon^2} \\
+&= \frac{\sigma^2}{n\epsilon^2} \to 0 \text{ as } n\to\infty
+\end{align*}
+\end{proof}
+
+\subsubsection{Strong Law of Large Numbers (SLLN)}
+
+\begin{theorem}[Strong Law of Large Numbers]
+Let $X_1, X_2, \ldots$ be i.i.d. random variables with $E[|X_i|] < \infty$ and $E[X_i] = \mu$. Then:
+\begin{equation}
+P\left(\lim_{n\to\infty} \bar{X}_n = \mu\right) = 1
+\end{equation}
+\end{theorem}
+
+This is a stronger result: almost sure convergence implies convergence in probability, but not vice versa.
+
+\subsection{Central Limit Theorem}
+
+\begin{theorem}[Central Limit Theorem]
+Let $X_1, X_2, \ldots$ be i.i.d. random variables with $E[X_i] = \mu$ and $\text{Var}(X_i) = \sigma^2 < \infty$. Define the standardized sum:
+\begin{equation}
+Z_n = \frac{\bar{X}_n - \mu}{\sigma/\sqrt{n}} = \frac{\sum_{i=1}^n X_i - n\mu}{\sigma\sqrt{n}}
+\end{equation}
+
+Then $Z_n$ converges in distribution to the standard normal distribution $N(0,1)$:
+\begin{equation}
+\lim_{n\to\infty} P(Z_n \leq z) = \Phi(z) = \frac{1}{\sqrt{2\pi}}\int_{-\infty}^z e^{-t^2/2}\,dt
+\end{equation}
+\end{theorem}
+
+\subsubsection{Practical Implications}
+
+The CLT explains why normal distributions appear ubiquitously:
+\begin{itemize}
+\item Measurement errors (sum of many small independent errors)
+\item Network latency (sum of processing times at multiple nodes)
+\item Physical phenomena involving many independent factors
+\end{itemize}
+
+\textbf{Rule of thumb}: For most distributions, $n \geq 30$ provides good normal approximation. For symmetric distributions, $n \geq 10$ often suffices.
+
+\subsection{Computational Verification}
+
+Consider generating $n$ samples from an exponential distribution (highly skewed) and computing the sample mean. By CLT, the distribution of $\bar{X}_n$ should approach normal as $n$ increases.
+
+\section{Measure Theory and Probability Formalization}
+
+\subsection{Motivation}
+
+Classical probability (finite sample spaces with uniform probabilities) is insufficient for continuous distributions. Measure theory provides a rigorous foundation for:
+\begin{itemize}
+\item Defining probability on uncountable spaces (e.g., $\mathbb{R}$)
+\item Handling pathological sets and functions
+\item Unifying discrete and continuous probability
+\item Justifying operations like integration and differentiation of distributions
+\end{itemize}
+
+\subsection{Measure Theory Foundations}
+
+\begin{definition}[$\sigma$-Algebra]
+A collection $\mathcal{F}$ of subsets of $\Omega$ is a $\sigma$-algebra if:
+\begin{enumerate}
+\item $\Omega \in \mathcal{F}$
+\item If $A \in \mathcal{F}$, then $A^c \in \mathcal{F}$
+\item If $A_1, A_2, \ldots \in \mathcal{F}$, then $\bigcup_{i=1}^\infty A_i \in \mathcal{F}$
+\end{enumerate}
+\end{definition}
+
+The $\sigma$-algebra defines which sets are measurable (events we can assign probabilities to).
+
+\begin{definition}[Measure]
+A measure $\mu$ on $(\Omega, \mathcal{F})$ is a function $\mu: \mathcal{F} \to [0, \infty]$ satisfying:
+\begin{enumerate}
+\item $\mu(\emptyset) = 0$
+\item Countable additivity: For disjoint $A_1, A_2, \ldots \in \mathcal{F}$:
+$$\mu\left(\bigcup_{i=1}^\infty A_i\right) = \sum_{i=1}^\infty \mu(A_i)$$
+\end{enumerate}
+\end{definition}
+
+A probability measure is a measure with $\mu(\Omega) = 1$.
+
+\subsection{Lebesgue-Stieltjes Integration}
+
+\subsubsection{Construction}
+
+The Lebesgue integral generalizes the Riemann integral by partitioning the \textit{range} rather than the domain.
+
+\begin{definition}[Lebesgue Integral for Simple Functions]
+For a simple function $s = \sum_{i=1}^n a_i \mathbf{1}_{A_i}$ (where $\mathbf{1}_{A_i}$ is the indicator function):
+\begin{equation}
+\int s\,d\mu = \sum_{i=1}^n a_i \mu(A_i)
+\end{equation}
+\end{definition}
+
+For general measurable functions $f \geq 0$, approximate by simple functions:
+\begin{equation}
+\int f\,d\mu = \sup\left\{\int s\,d\mu : s \text{ simple}, 0 \leq s \leq f\right\}
+\end{equation}
+
+\subsubsection{Lebesgue-Stieltjes Integration}
+
+Given a cumulative distribution function $F: \mathbb{R} \to [0,1]$, the Lebesgue-Stieltjes integral with respect to $F$ is:
+\begin{equation}
+\int f(x)\,dF(x)
+\end{equation}
+
+This unifies discrete and continuous distributions:
+\begin{itemize}
+\item If $F$ is absolutely continuous with density $f$: $\int g\,dF = \int g(x)f(x)\,dx$
+\item If $F$ has jump discontinuities: $\int g\,dF = \sum_i g(x_i) p_i$ (discrete case)
+\end{itemize}
+
+\subsection{Applications to Probability}
+
+\textbf{Expected value}: For random variable $X$ with distribution $F$:
+\begin{equation}
+E[X] = \int x\,dF(x)
+\end{equation}
+
+This formula works for discrete, continuous, and mixed distributions.
+
+\section{Generation of Random Variables}
+
+\subsection{The Inverse Transform Method}
+
+The fundamental problem: Given a source of uniform random numbers $U \sim \text{Uniform}(0,1)$, generate samples from an arbitrary distribution $F$.
+
+\begin{theorem}[Inverse Transform]
+Let $F$ be a cumulative distribution function and $F^{-1}$ its quantile function (generalized inverse). If $U \sim \text{Uniform}(0,1)$, then:
+\begin{equation}
+X = F^{-1}(U)
+\end{equation}
+has CDF $F$.
+\end{theorem}
+
+\begin{proof}
+For any $x$:
+\begin{align*}
+P(X \leq x) &= P(F^{-1}(U) \leq x) \\
+&= P(U \leq F(x)) \quad \text{(by monotonicity of $F$)} \\
+&= F(x) \quad \text{(since $U \sim \text{Uniform}(0,1)$)}
+\end{align*}
+\end{proof}
+
+\subsection{Examples}
+
+\subsubsection{Exponential Distribution}
+For $X \sim \text{Exp}(\lambda)$ with CDF $F(x) = 1 - e^{-\lambda x}$:
+\begin{align*}
+U &= 1 - e^{-\lambda X} \\
+X &= -\frac{1}{\lambda}\ln(1-U) = -\frac{1}{\lambda}\ln(U)
+\end{align*}
+
+\subsubsection{Normal Distribution (Box-Muller)}
+The inverse transform is not practical for normal distributions (no closed form for $\Phi^{-1}$). Instead, use Box-Muller transformation:
+
+Given $U_1, U_2 \sim \text{Uniform}(0,1)$ independent:
+\begin{align}
+Z_1 &= \sqrt{-2\ln U_1}\cos(2\pi U_2) \\
+Z_2 &= \sqrt{-2\ln U_1}\sin(2\pi U_2)
+\end{align}
+Then $Z_1, Z_2 \sim N(0,1)$ independently.
+
+\subsection{Rejection Sampling}
+
+When inverse transform is infeasible, rejection sampling generates from $f$ using a proposal distribution $g$:
+
+\begin{algorithm}
+\caption{Rejection Sampling}
+\begin{algorithmic}[1]
+\State Choose $M$ such that $f(x) \leq Mg(x)$ for all $x$
+\Repeat
+\State Generate $Y \sim g$
+\State Generate $U \sim \text{Uniform}(0,1)$
+\Until{$U \leq \frac{f(Y)}{Mg(Y)}$}
+\State \Return $Y$
+\end{algorithmic}
+\end{algorithm}
+
+Acceptance probability is $1/M$, so efficiency requires $M$ close to 1.
+
+\section{Applications to Cybersecurity}
+
+\subsection{Anomaly Detection via Statistical Thresholds}
+
+Using CLT and normal approximation for detecting unusual network behavior:
+
+\begin{enumerate}
+\item Collect baseline data: packet rates, connection durations, payload sizes
+\item Compute mean $\mu$ and standard deviation $\sigma$ using Welford's algorithm
+\item For new observation $x$, compute z-score: $z = \frac{x - \mu}{\sigma}$
+\item Flag as anomaly if $|z| > 3$ (approximately $p < 0.003$ under normality)
+\end{enumerate}
+
+\subsection{Monte Carlo Simulation for Risk Assessment}
+
+Estimate probability of rare events (e.g., system compromise) through simulation:
+
+\begin{enumerate}
+\item Model attack paths as random variables with known distributions
+\item Generate random scenarios using inverse transform/rejection sampling
+\item Estimate success probability as proportion of successful attacks
+\item Use LLN to justify convergence of estimate
+\end{enumerate}
+
+\subsection{Randomness in Cryptography}
+
+Cryptographic security depends on high-quality random number generation:
+
+\begin{itemize}
+\item \textbf{Key generation}: Uniform sampling from key space
+\item \textbf{Initialization vectors}: Random seeds for encryption algorithms
+\item \textbf{Salting}: Random values to prevent rainbow table attacks
+\end{itemize}
+
+Statistical tests (NIST SP 800-22) verify randomness quality by checking deviation from theoretical distributions predicted by CLT and other probabilistic properties.
+
+\subsection{Statistical Independence Testing}
+
+In intrusion detection, testing whether user behavior (X) is independent of time-of-day (Y):
+
+\begin{itemize}
+\item Construct contingency table of (user actions) $\times$ (time periods)
+\item Compute expected frequencies under independence
+\item Use $\chi^2$ test to detect dependence
+\item Dependence may indicate compromised accounts (unusual access patterns)
+\end{itemize}
+
+\section{Conclusions}
+
+This thesis has examined fundamental concepts bridging theoretical probability and practical computation:
+
+\begin{enumerate}
+\item \textbf{Online algorithms} enable efficient computation of statistics in streaming environments, essential for real-time monitoring.
+
+\item \textbf{LLN and CLT} provide theoretical justification for statistical inference and explain the ubiquity of normal distributions.
+
+\item \textbf{Measure theory} rigorously formalizes probability, enabling treatment of continuous distributions and pathological cases.
+
+\item \textbf{Random variable generation} transforms uniform randomness into arbitrary distributions, powering simulation and cryptography.
+
+\item \textbf{Cybersecurity applications} demonstrate practical value of statistical theory in anomaly detection, risk assessment, and security testing.
+\end{enumerate}
+
+The interplay between theory and computation is central to modern statistics: rigorous mathematical foundations ensure correctness, while efficient algorithms enable practical application at scale. In cybersecurity, where adversaries exploit both theoretical weaknesses and implementation flaws, this dual perspective is essential for building robust defenses.
+
+\section*{References}
+
+\begin{enumerate}[label={[\arabic*]}]
+\item Welford, B. P. (1962). Note on a method for calculating corrected sums of squares and products. \textit{Technometrics}, 4(3), 419-420.
+\item Billingsley, P. (2012). \textit{Probability and Measure} (Anniversary Edition). Wiley.
+\item Durrett, R. (2019). \textit{Probability: Theory and Examples} (5th ed.). Cambridge University Press.
+\item Devroye, L. (1986). \textit{Non-Uniform Random Variate Generation}. Springer.
+\item Feller, W. (1968). \textit{An Introduction to Probability Theory and Its Applications}, Vol. 1 (3rd ed.). Wiley.
+\item Ross, S. M. (2014). \textit{Introduction to Probability Models} (11th ed.). Academic Press.
+\item Jain, R., \& Chlamtac, I. (1985). The P-square algorithm for dynamic calculation of quantiles and histograms without storing observations. \textit{Communications of the ACM}, 28(10), 1076-1085.
+\item NIST (2010). \textit{A Statistical Test Suite for Random and Pseudorandom Number Generators for Cryptographic Applications}. Special Publication 800-22 Rev. 1a.
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework 7: Statistical Independence</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Homework 7: Statistical Independence</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <p class="eyebrow">Homework 7 · Statistical Independence Analysis</p>
+            <h1>Statistical Independence and Chi-Square Testing</h1>
+            <p class="lead">Analyzing bivariate relationships through contingency tables, expected frequencies, chi-square statistics, and distinguishing statistical association from causality.</p>
+        </div>
+
+        <section>
+            <h2 id="overview">Overview</h2>
+            <p>This homework explores the concept of statistical independence between two categorical variables. Given a bivariate dataset (X, Y), we will:</p>
+            <ul>
+                <li>Programmatically construct contingency tables showing joint and marginal frequencies</li>
+                <li>Calculate conditional probabilities P(Y|X) and P(X|Y)</li>
+                <li>Compute expected frequencies under the assumption of independence</li>
+                <li>Calculate the chi-square (χ²) statistic and p-value to test independence</li>
+                <li>Interpret results in terms of statistical dependence vs. independence</li>
+                <li>Critically distinguish statistical association from causality</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="theory">Theoretical Background</h2>
+
+            <h3>Statistical Independence</h3>
+            <p><strong>Definition (Probability):</strong> Two random variables X and Y are independent if and only if:</p>
+            <p><code>P(X = x, Y = y) = P(X = x) · P(Y = y)</code> for all x, y</p>
+            <p>Equivalently:</p>
+            <ul>
+                <li><code>P(Y = y | X = x) = P(Y = y)</code> (knowing X doesn't change Y's distribution)</li>
+                <li><code>P(X = x | Y = y) = P(X = x)</code> (knowing Y doesn't change X's distribution)</li>
+            </ul>
+
+            <h3>Contingency Tables</h3>
+            <p>A contingency table (cross-tabulation) displays the frequency distribution of two categorical variables:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>X \ Y</th>
+                        <th>Y₁</th>
+                        <th>Y₂</th>
+                        <th>...</th>
+                        <th>Yₘ</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>X₁</strong></td>
+                        <td>n₁₁</td>
+                        <td>n₁₂</td>
+                        <td>...</td>
+                        <td>n₁ₘ</td>
+                        <td>n₁·</td>
+                    </tr>
+                    <tr>
+                        <td><strong>X₂</strong></td>
+                        <td>n₂₁</td>
+                        <td>n₂₂</td>
+                        <td>...</td>
+                        <td>n₂ₘ</td>
+                        <td>n₂·</td>
+                    </tr>
+                    <tr>
+                        <td>...</td>
+                        <td>...</td>
+                        <td>...</td>
+                        <td>...</td>
+                        <td>...</td>
+                        <td>...</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Xₖ</strong></td>
+                        <td>nₖ₁</td>
+                        <td>nₖ₂</td>
+                        <td>...</td>
+                        <td>nₖₘ</td>
+                        <td>nₖ·</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td>n·₁</td>
+                        <td>n·₂</td>
+                        <td>...</td>
+                        <td>n·ₘ</td>
+                        <td>n</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Where:</p>
+            <ul>
+                <li><strong>nᵢⱼ</strong> = observed frequency (count) of (X=Xᵢ, Y=Yⱼ)</li>
+                <li><strong>nᵢ·</strong> = row marginal (total for X=Xᵢ) = Σⱼ nᵢⱼ</li>
+                <li><strong>n·ⱼ</strong> = column marginal (total for Y=Yⱼ) = Σᵢ nᵢⱼ</li>
+                <li><strong>n</strong> = grand total = Σᵢ Σⱼ nᵢⱼ</li>
+            </ul>
+
+            <h3>Marginal and Conditional Frequencies</h3>
+            <p><strong>Marginal probabilities (estimated from data):</strong></p>
+            <ul>
+                <li>P̂(X = Xᵢ) = nᵢ· / n</li>
+                <li>P̂(Y = Yⱼ) = n·ⱼ / n</li>
+            </ul>
+
+            <p><strong>Conditional probabilities:</strong></p>
+            <ul>
+                <li>P̂(Y = Yⱼ | X = Xᵢ) = nᵢⱼ / nᵢ·</li>
+                <li>P̂(X = Xᵢ | Y = Yⱼ) = nᵢⱼ / n·ⱼ</li>
+            </ul>
+
+            <h3>Expected Frequencies Under Independence</h3>
+            <p>If X and Y were independent, the expected frequency for cell (i, j) would be:</p>
+            <p><code>Eᵢⱼ = n · P(X = Xᵢ) · P(Y = Yⱼ) = (nᵢ· · n·ⱼ) / n</code></p>
+            <p>This is the frequency we would expect if the row and column variables were unrelated.</p>
+
+            <h3>Chi-Square Test for Independence</h3>
+            <p>The chi-square statistic measures the discrepancy between observed and expected frequencies:</p>
+            <p><code>χ² = Σᵢ Σⱼ [(Oᵢⱼ - Eᵢⱼ)² / Eᵢⱼ]</code></p>
+            <p>Where Oᵢⱼ = observed frequency, Eᵢⱼ = expected frequency under independence.</p>
+
+            <p><strong>Degrees of freedom:</strong> df = (k - 1)(m - 1), where k = number of X categories, m = number of Y categories</p>
+
+            <p><strong>Null hypothesis (H₀):</strong> X and Y are independent</p>
+            <p><strong>Alternative hypothesis (H₁):</strong> X and Y are dependent (associated)</p>
+
+            <p><strong>Decision rule:</strong></p>
+            <ul>
+                <li>If p-value < α (typically 0.05): Reject H₀, conclude variables are dependent</li>
+                <li>If p-value ≥ α: Fail to reject H₀, insufficient evidence of dependence</li>
+            </ul>
+
+            <h3>Association vs. Causality</h3>
+            <p><strong>Statistical association</strong> means the variables are not independent—knowing one provides information about the other.</p>
+            <p><strong>Causality</strong> means one variable directly influences or causes changes in the other.</p>
+
+            <p><strong>CRITICAL DISTINCTION:</strong> Association ≠ Causation</p>
+            <ul>
+                <li><strong>Correlation does not imply causation</strong></li>
+                <li>Possible explanations for association:
+                    <ul>
+                        <li>X causes Y (direct causation)</li>
+                        <li>Y causes X (reverse causation)</li>
+                        <li>A confounding variable Z causes both X and Y</li>
+                        <li>Coincidental correlation (spurious)</li>
+                    </ul>
+                </li>
+                <li><strong>Establishing causality</strong> requires:
+                    <ul>
+                        <li>Controlled experiments (randomized controlled trials)</li>
+                        <li>Temporal precedence (cause precedes effect)</li>
+                        <li>Elimination of confounders</li>
+                        <li>Plausible mechanism</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="independent-example">Example 1: Independent Variables</h2>
+            <p>Generate data where X and Y are sampled independently from separate distributions. The chi-square test should fail to reject independence.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Scenario: Security Training Level vs. Department</h3>
+                    <p>Consider a company where security training completion (Weak, Medium, Strong) is assigned randomly, independent of department (Engineering, Marketing, HR).</p>
+                    <p><strong>Expected result:</strong> No association between training level and department. Chi-square test should yield p-value > 0.05.</p>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Generate Independent Data</h3>
+                    <label>Sample size (n)
+                        <input id="independent-n" type="number" value="200" min="50" max="10000" step="50">
+                    </label>
+                    <button id="generate-independent-btn" type="button">Generate & Analyze</button>
+                    <p id="independent-msg" class="msg" role="status"></p>
+                </div>
+            </div>
+
+            <div id="independent-results" style="display: none; margin-top: 2rem;">
+                <h3>Contingency Table (Observed Frequencies)</h3>
+                <div id="independent-contingency-table"></div>
+
+                <h3>Expected Frequencies (Under Independence)</h3>
+                <div id="independent-expected-table"></div>
+
+                <h3>Chi-Square Test Results</h3>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td><strong>χ² statistic:</strong></td>
+                            <td><output id="independent-chi-square">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Degrees of freedom:</strong></td>
+                            <td><output id="independent-df">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>p-value:</strong></td>
+                            <td><output id="independent-p-value">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Significant (α=0.05):</strong></td>
+                            <td><output id="independent-significant">–</output></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Interpretation</h3>
+                <div class="result-item">
+                    <strong>Conclusion:</strong>
+                    <output id="independent-conclusion">–</output>
+                </div>
+                <div class="result-item">
+                    <strong>Relationship:</strong>
+                    <output id="independent-relationship">–</output>
+                </div>
+                <div class="result-item">
+                    <strong>Causality Note:</strong>
+                    <output id="independent-causality">–</output>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="dependent-example">Example 2: Dependent Variables</h2>
+            <p>Generate data where Y is conditionally dependent on X. The chi-square test should reject independence.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Scenario: Attack Sophistication vs. Breach Success</h3>
+                    <p>Consider cyberattacks where sophistication level (Weak, Medium, Strong) influences breach outcome (Fail, Pass, Excel).</p>
+                    <p><strong>Dependency mechanism:</strong> Stronger attacks have higher success rates:</p>
+                    <ul>
+                        <li>Weak attacks: mostly fail</li>
+                        <li>Medium attacks: mixed results</li>
+                        <li>Strong attacks: mostly succeed</li>
+                    </ul>
+                    <p><strong>Expected result:</strong> Strong association between sophistication and success. Chi-square test should yield p-value < 0.05.</p>
+
+                    <h4>Dependency Types</h4>
+                    <ul>
+                        <li><strong>Conditional:</strong> Y sampled from different distributions depending on X</li>
+                        <li><strong>Correlation:</strong> Bivariate normal with correlation ρ, then binned into categories</li>
+                    </ul>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Generate Dependent Data</h3>
+                    <label>Sample size (n)
+                        <input id="dependent-n" type="number" value="200" min="50" max="10000" step="50">
+                    </label>
+                    <label>Dependency type
+                        <select id="dependency-type">
+                            <option value="conditional">Conditional (attack success)</option>
+                            <option value="correlation">Correlation (binned normal)</option>
+                        </select>
+                    </label>
+                    <button id="generate-dependent-btn" type="button">Generate & Analyze</button>
+                    <p id="dependent-msg" class="msg" role="status"></p>
+                </div>
+            </div>
+
+            <div id="dependent-results" style="display: none; margin-top: 2rem;">
+                <h3>Contingency Table (Observed Frequencies)</h3>
+                <div id="dependent-contingency-table"></div>
+
+                <h3>Expected Frequencies (Under Independence)</h3>
+                <div id="dependent-expected-table"></div>
+
+                <h3>Chi-Square Test Results</h3>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td><strong>χ² statistic:</strong></td>
+                            <td><output id="dependent-chi-square">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Degrees of freedom:</strong></td>
+                            <td><output id="dependent-df">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>p-value:</strong></td>
+                            <td><output id="dependent-p-value">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Significant (α=0.05):</strong></td>
+                            <td><output id="dependent-significant">–</output></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Interpretation</h3>
+                <div class="result-item">
+                    <strong>Conclusion:</strong>
+                    <output id="dependent-conclusion">–</output>
+                </div>
+                <div class="result-item">
+                    <strong>Relationship:</strong>
+                    <output id="dependent-relationship">–</output>
+                </div>
+                <div class="result-item">
+                    <strong>Causality Note:</strong>
+                    <output id="dependent-causality">–</output>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="custom-data">Custom Data Analysis</h2>
+            <p>Analyze your own bivariate dataset. Provide data in CSV format (X,Y pairs).</p>
+
+            <div class="split">
+                <div>
+                    <h3>Data Format</h3>
+                    <p>Enter data as comma-separated values with a header row:</p>
+                    <pre>X,Y
+A,Low
+A,Medium
+B,High
+B,Medium
+C,Low
+...</pre>
+
+                    <h3>Example Datasets</h3>
+
+                    <h4>1. Browser Type vs. Vulnerability Click</h4>
+                    <pre>Browser,Clicked
+Chrome,No
+Chrome,No
+Firefox,No
+Safari,Yes
+Chrome,No
+Firefox,No
+Safari,Yes
+Edge,No</pre>
+
+                    <h4>2. Password Strength vs. Breach</h4>
+                    <pre>Strength,Breached
+Weak,Yes
+Weak,Yes
+Medium,No
+Strong,No
+Weak,Yes
+Medium,Yes
+Strong,No
+Medium,No</pre>
+                </div>
+
+                <div class="panel sticky">
+                    <h3>Enter Custom Data</h3>
+                    <label>Paste CSV data (X,Y format)
+                        <textarea id="custom-data" rows="10" placeholder="X,Y&#10;A,Low&#10;A,Medium&#10;B,High&#10;..."></textarea>
+                    </label>
+                    <button id="analyze-custom-btn" type="button">Analyze</button>
+                    <p id="custom-msg" class="msg" role="status"></p>
+                </div>
+            </div>
+
+            <div id="custom-results" style="display: none; margin-top: 2rem;">
+                <h3>Contingency Table (Observed Frequencies)</h3>
+                <div id="custom-contingency-table"></div>
+
+                <h3>Expected Frequencies (Under Independence)</h3>
+                <div id="custom-expected-table"></div>
+
+                <h3>Chi-Square Test Results</h3>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td><strong>χ² statistic:</strong></td>
+                            <td><output id="custom-chi-square">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Degrees of freedom:</strong></td>
+                            <td><output id="custom-df">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>p-value:</strong></td>
+                            <td><output id="custom-p-value">–</output></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Significant (α=0.05):</strong></td>
+                            <td><output id="custom-significant">–</output></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Interpretation</h3>
+                <div class="result-item">
+                    <strong>Conclusion:</strong>
+                    <output id="custom-conclusion">–</output>
+                </div>
+                <div class="result-item">
+                    <strong>Relationship:</strong>
+                    <output id="custom-relationship">–</output>
+                </div>
+                <div class="result-item">
+                    <strong>Causality Note:</strong>
+                    <output id="custom-causality">–</output>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 id="causality">Association vs. Causality: Critical Discussion</h2>
+
+            <h3>What the Chi-Square Test Tells Us</h3>
+            <p>The chi-square test for independence answers one question: <strong>Are the two variables statistically associated?</strong></p>
+            <ul>
+                <li>If p < 0.05: We have evidence of association (dependence)</li>
+                <li>If p ≥ 0.05: No evidence of association (possibly independent)</li>
+            </ul>
+
+            <h3>What the Chi-Square Test Does NOT Tell Us</h3>
+            <p>The test provides <strong>no information about causality</strong>. Association can arise from multiple mechanisms:</p>
+
+            <h4>1. Direct Causation: X → Y</h4>
+            <p><strong>Example:</strong> Attack sophistication (X) → Breach success (Y)</p>
+            <p>More sophisticated attacks directly cause higher success rates.</p>
+
+            <h4>2. Reverse Causation: Y → X</h4>
+            <p><strong>Example:</strong> Ice cream sales (X) correlate with crime rates (Y)</p>
+            <p>But high crime doesn't cause ice cream purchases—both are caused by warm weather.</p>
+
+            <h4>3. Confounding Variable: Z → X and Z → Y</h4>
+            <p><strong>Example:</strong> Education level (Z) → Income (X) and Health outcomes (Y)</p>
+            <p>Income and health are associated, but education is the underlying cause of both.</p>
+
+            <h4>4. Spurious Correlation</h4>
+            <p><strong>Example:</strong> Number of Nicolas Cage films (X) correlates with swimming pool drownings (Y)</p>
+            <p>Pure coincidence with no causal mechanism.</p>
+
+            <h3>Establishing Causality</h3>
+            <p>To move from association to causation, we need:</p>
+            <ul>
+                <li><strong>Randomized controlled trials (RCTs):</strong> Randomly assign treatment to eliminate confounding</li>
+                <li><strong>Temporal precedence:</strong> Cause must precede effect in time</li>
+                <li><strong>Dose-response relationship:</strong> Stronger cause → stronger effect</li>
+                <li><strong>Consistency:</strong> Relationship holds across different studies and populations</li>
+                <li><strong>Plausibility:</strong> Biologically/mechanistically plausible pathway</li>
+                <li><strong>Specificity:</strong> Specific cause → specific effect (not always required)</li>
+            </ul>
+
+            <h3>In Cybersecurity Context</h3>
+            <p><strong>Observed association:</strong> Systems with outdated software are more frequently breached.</p>
+
+            <p><strong>Possible explanations:</strong></p>
+            <ol>
+                <li><strong>Causal:</strong> Outdated software has vulnerabilities → higher breach probability</li>
+                <li><strong>Confounding:</strong> Organizations with poor security culture both fail to update software AND have weak overall defenses</li>
+                <li><strong>Reverse:</strong> Breached organizations delay updates during incident response</li>
+            </ol>
+
+            <p><strong>How to determine causality:</strong></p>
+            <ul>
+                <li>Controlled experiment: randomly assign software update status to similar systems</li>
+                <li>Longitudinal study: track systems over time, observe breach risk before and after updates</li>
+                <li>Control for confounders: adjust for organization size, industry, security budget, etc.</li>
+            </ul>
+
+            <h3>Statistical vs. Practical Significance</h3>
+            <p><strong>Statistical significance (p < 0.05):</strong> Unlikely to occur by chance alone</p>
+            <p><strong>Practical significance:</strong> Effect size is large enough to matter in real-world decisions</p>
+            <ul>
+                <li>With large n, even tiny effects become statistically significant but may be practically irrelevant</li>
+                <li>With small n, large effects may not reach statistical significance but could be important</li>
+                <li>Always consider effect size (e.g., Cramér's V, odds ratios) alongside p-values</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 id="conclusions">Conclusions</h2>
+
+            <h3>Key Takeaways</h3>
+            <ul>
+                <li><strong>Contingency tables</strong> organize bivariate categorical data, showing joint, marginal, and conditional frequencies</li>
+                <li><strong>Independence</strong> means P(X,Y) = P(X)·P(Y) — knowing one variable provides no information about the other</li>
+                <li><strong>Expected frequencies</strong> under independence are (row total × column total) / n</li>
+                <li><strong>Chi-square statistic</strong> quantifies discrepancy between observed and expected frequencies</li>
+                <li><strong>P-value</strong> indicates whether observed association is unlikely under the null hypothesis of independence</li>
+                <li><strong>Association ≠ Causation:</strong> Statistical tests detect relationships but cannot establish causal direction</li>
+                <li><strong>Causality requires:</strong> Controlled experiments, temporal precedence, and elimination of confounders</li>
+            </ul>
+
+            <h3>Practical Applications in Cybersecurity</h3>
+            <ul>
+                <li><strong>Anomaly detection:</strong> Identifying unusual associations between user behavior and access patterns</li>
+                <li><strong>Threat intelligence:</strong> Correlating attack vectors with attacker profiles</li>
+                <li><strong>Risk assessment:</strong> Quantifying relationships between vulnerabilities and exploitation</li>
+                <li><strong>Incident analysis:</strong> Understanding which factors are associated with successful attacks</li>
+            </ul>
+
+            <h3>Limitations and Cautions</h3>
+            <ul>
+                <li>Chi-square test assumes sufficient sample size (expected frequencies ≥ 5 in each cell)</li>
+                <li>For small samples, use Fisher's exact test instead</li>
+                <li>P-values are sensitive to sample size—report effect sizes too</li>
+                <li>Multiple testing increases false positive rate—use corrections (e.g., Bonferroni)</li>
+                <li>Always critically evaluate whether observed associations reflect real phenomena or artifacts</li>
+            </ul>
+
+            <h3>Extensions</h3>
+            <p>Beyond this homework, you can explore:</p>
+            <ul>
+                <li><strong>Effect size measures:</strong> Cramér's V, phi coefficient, contingency coefficient</li>
+                <li><strong>Exact tests:</strong> Fisher's exact test for small samples</li>
+                <li><strong>Multivariate analysis:</strong> Log-linear models, logistic regression for multiple variables</li>
+                <li><strong>Causal inference:</strong> Structural equation modeling, instrumental variables, causal graphs</li>
+                <li><strong>Time series:</strong> Granger causality for temporal data</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Sapienza University of Rome · Master's Degree in Cybersecurity · Statistics 2026/27</p>
+            <p class="disclaimer">Educational simulation. Remember: correlation does not imply causation.</p>
+        </div>
+    </footer>
+
+    <script src="homework7.js"></script>
+</body>
+</html>
